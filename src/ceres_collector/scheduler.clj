@@ -124,7 +124,7 @@
 
 
 (defn urls-backup-schedule
-  "Create a schedule to backup the reactions at 3.15 am"
+  "Create a schedule to backup the urls at 3.20 am"
   [path]
   (let [job (j/build
              (j/of-type UrlsBackup)
@@ -141,8 +141,9 @@
                     (ending-daily-at (time-of-day 3 20 01)))))]
     (qs/schedule job trigger)))
 
+
 (defn users-backup-schedule
-  "Create a schedule to backup the reactions at 3.15 am"
+  "Create a schedule to backup the users at 3.25 am"
   [path]
   (let [job (j/build
              (j/of-type UsersBackup)
@@ -160,7 +161,26 @@
     (qs/schedule job trigger)))
 
 
-(defn start-executor
+(defn mentions-backup-schedule
+  "Create a schedule to backup the mentions at 3.30 am"
+  [path]
+  (let [job (j/build
+             (j/of-type MentionsBackup)
+             (j/using-job-data {"folder-path" path})
+             (j/with-identity (j/key "jobs.mentionsbackup.1")))
+        tk (t/key "triggers.7")
+        trigger (t/build
+                 (t/with-identity tk)
+                 (t/start-now)
+                 (t/with-schedule
+                   (schedule
+                    (every-day)
+                    (starting-daily-at (time-of-day 3 30 00))
+                    (ending-daily-at (time-of-day 3 30 01)))))]
+    (qs/schedule job trigger)))
+
+
+(defn start-scheduler
   "Run the schedules"
   [path]
   (qs/initialize)
@@ -170,4 +190,5 @@
   (reactions-backup-schedule path)
   (pubs-backup-schedule path)
   (urls-backup-schedule path)
-  )
+  (users-backup-schedule path)
+  (mentions-backup-schedule path))

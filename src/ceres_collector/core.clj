@@ -1,6 +1,7 @@
 (ns ceres-collector.core
   (:gen-class :main true)
   (:require [ceres-collector.db :refer [store-raw-tweet set-db init-mongo]]
+            [ceres-collector.scheduler :refer [start-scheduler]]
             [gezwitscher.core :refer [start-filter-stream gezwitscher]]
             [clojure.java.io :as io]
             [clojure.core.async :refer [close! put! timeout sub chan <!! >!! <! >! go go-loop] :as async]
@@ -45,8 +46,9 @@
   (when (:init? @server-state) (init-mongo))
   (info @server-state)
   (let [{{:keys [follow track credentials]} :app} @server-state]
-    (start-filter-stream follow track store-raw-tweet credentials)))
-
+    (start-filter-stream follow track store-raw-tweet credentials))
+  (when (:backup? @server-state)
+    (start-scheduler (:backup-folder @server-state))))
 
 (comment
 

@@ -118,11 +118,6 @@
       (-> res (enlive/select [:head :title]) first :content first))))
 
 
-
-
-
-
-
 (defn store-user [{{:keys [id screen_name followers_count created_at]} :user}]
   (let [date (f/parse custom-formatter created_at)]
       (mc/insert-and-return
@@ -133,60 +128,37 @@
         :created_at date})))
 
 
-
-
-
 (defn store-publication [uid tid url-id type hids ts]
-  (mc/insert-and-return
-   @db
-   "publications"
-   {:user uid
-    :tweet tid
-    :url url-id
-    :type type
-    :hashtags hids
-    :ts ts}))
+  (mc/insert-and-return @db "publications" {:user uid
+                                            :tweet tid
+                                            :url url-id
+                                            :type type
+                                            :hashtags hids
+                                            :ts ts}))
 
 
 (defn store-url [url uid tid ts]
-  (mc/insert
-   @db
-   "urls"
-   {:url url
-    :user uid
-    :tweet tid
-    :ts ts}))
-
-
-(defn store-tmp-url [url uid tid ts]
-  (mc/insert
-   @db
-   "tmpurls"
-   {:url url
-    :user uid
-    :tweet tid
-    :ts ts}))
+  (mc/insert @db "urls" {:url url
+                         :user uid
+                         :tweet tid
+                         :ts ts}))
 
 
 (defn store-mention
   [uid pid]
-  (mc/insert
-   @db
-   "mentions"
-   {:user uid
-    :publication pid}))
+  (mc/insert @db "mentions" {:user uid
+                             :publication pid}))
 
 
-(defn store-hashtag [text]
-  (mc/insert-and-return
-   @db
-   "hashtags"
-   {:text text}))
+(defn store-hashtag [text ts]
+  (mc/insert-and-return @db "hashtags" {:text text
+                                        :first-seen ts}))
 
 
 (defn store-reaction
   [pub-id source-id]
-  (mc/insert @db "reactions" {:publication pub-id :source source-id}))
+  (mc/insert @db "reactions" {:publication pub-id
+                              :source source-id}))
 
 
 (defn get-user-id [{:keys [user] :as status}]
@@ -195,10 +167,10 @@
     (:_id (store-user status))))
 
 
-(defn get-hashtag-id [text]
+(defn get-hashtag-id [text ts]
   (if-let [hid (:_id (mc/find-one-as-map @db "hashtags" {:text text}))]
     hid
-    (:_id (store-hashtag text))))
+    (:_id (store-hashtag text ts))))
 
 
 (defn store-raw-html
@@ -271,7 +243,7 @@
         {:keys [user entities retweeted_status in_reply_to_status_id created_at _id]
          :as record} (from-db-object (mc/insert-and-return @db "tweets" (merge doc {:_id oid})) true)
         uid (get-user-id status)
-        hids (doall (map (fn [{:keys [text]}] (get-hashtag-id text)) (:hashtags entities)))
+        hids (doall (map (fn [{:keys [text]}] (get-hashtag-id text created_at)) (:hashtags entities)))
         type (get-type status)
         source? (news-accounts (:screen_name user))]
     (case type
