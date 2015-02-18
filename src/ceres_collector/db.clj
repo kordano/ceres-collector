@@ -178,15 +178,7 @@
   [{:keys [url content-type ts] :as expanded-url} url-id]
   (let [raw-html (if (= url :not-available)
                    nil
-                   (slurp url))
-       html-title (if raw-html
-                     (-> (java.io.StringReader. raw-html)
-                         enlive/html-resource
-                         (enlive/select [:head :title])
-                         first
-                         :content
-                         first)
-                     :not-available)]
+                   (slurp url))]
     (mc/insert-and-return
      @db
      "htmls"
