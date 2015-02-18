@@ -1,12 +1,12 @@
 # ceres-collector
 
-A news tweet and article collector.
+An article and related tweets collector.
 
 ## Usage
 
 A running Mongodb instance is required.
 
-Configurate server (see '/opt/server-config.edn' for reference) and start server with
+Configure server (see '/opt/server-config.edn' for reference) and start it with
 
 ```
 lein run opt/server-config.edn
