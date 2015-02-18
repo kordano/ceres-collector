@@ -27,4 +27,7 @@ ADD ./opt /opt
 # grab project
 RUN git clone https://github.com/kordano/ceres-collector.git /opt/ceres-collector
 
+# retrieve dependencies
+RUN /opt/retrieve-deps
+
 CMD ["/opt/start-ceres"]
