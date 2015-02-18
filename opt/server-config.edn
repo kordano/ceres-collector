@@ -1,11 +1,8 @@
-{:port 8082
- :build :dev ;; use :prod for static paths and optimized js files otherwise :dev
- :version 0.0 ;; currently deployed version
+{:version 0.0 ;; currently deployed version
  :date "1970-01-01" ;; date of deployment
- :logging? false ;; activate logging
+ :logging? true ;; activate logging
  :logfile "/path/to/logfile" ;; if logging activated this is the file the log is written to
  :init? true ;; if the server runs for the first time, mongodb indices have to be build
- :http-server? true ;; decide wether the http-server is needed
  :backup? true ;; activate regular backup
  :backup-folder "/path/to/backup-folder"
  :app ;; twitter related configs
@@ -16,5 +13,5 @@
    :access-token "????"
    :access-token-secret "????"}
   :follow [1234 5678] ;; whom to follow on twitter -> only ids as Integers
-  :track ["clojure"] ;; keywords to follower
+  :track ["clojure"] ;; keywords to follow
   }}
