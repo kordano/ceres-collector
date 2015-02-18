@@ -6,7 +6,7 @@ An article and related tweets collector.
 
 A running Mongodb instance is required.
 
-Configure server (see '/opt/server-config.edn' for reference) and start it with
+Configure server (see `opt/server-config.edn` for reference) and start it with
 
 ```
 lein run opt/server-config.edn
