@@ -1,6 +1,7 @@
 (ns ceres-collector.db
   (:refer-clojure :exclude [sort find])
-  (:require [monger.core :as mg]
+  (:require [clojure.java.shell :refer [sh]]
+            [monger.core :as mg]
             [monger.collection :as mc]
             [monger.operators :refer :all]
             [monger.conversion :refer [from-db-object]]
@@ -9,8 +10,11 @@
             [aprint.core :refer [aprint]]
             [net.cgrand.enlive-html :as enlive]
             [clj-time.format :as f]
+            [clj-time.core :as t]
+            [clj-time.coerce :as c]
+            [clj-time.periodic :as p]
             [taoensso.timbre :as timbre]
-            [clj-time.core :as t])
+            )
   (:import org.bson.types.ObjectId))
 
 
@@ -270,7 +274,6 @@
         hids (doall (map (fn [{:keys [text]}] (get-hashtag-id text)) (:hashtags entities)))
         type (get-type status)
         source? (news-accounts (:screen_name user))]
-    (info (str "Storing " _id))
     (case type
       :retweet (do (store-simple-reaction uid _id :retweet hids created_at (:id retweeted_status)))
       :reply (do (store-simple-reaction uid _id :reply hids created_at in_reply_to_status_id))
@@ -287,11 +290,30 @@
     record))
 
 
-(comment
 
-  (mc/count @db "tweets" {:created_at {$gt (t/date-time 2015 2 1)}})
+;; --- MONGO DATA EXPORT/IMPORT ---
+(defn backup
+  "Write backup from given date of a specific collection to a given folder"
+  [date database coll folder-path]
+  (let [day-after (t/plus date (t/days 1))
+        m (str (t/month date))
+        d (str (t/day date))
+        file-path (str folder-path
+                       "/" coll
+                       "-" (t/year date)
+                       "-" (if (< (count m) 2) (str 0 m) m)
+                       "-" (if (< (count d) 2) (str 0 d) d)
+                       ".json")]
+    (sh "mongoexport"
+        "--port" "27017"
+        "--host" (or (System/getenv "DB_PORT_27017_TCP_ADDR") "127.0.0.1")
+        "--db" database
+        "--collection" coll
+        "--query" (str "{" (if (= coll "tweets") "created_at" "ts") " : {$gte : new Date(" (c/to-long date) "), $lt : new Date(" (c/to-long day-after) ")}}")
+        "--out" file-path)))
 
-  (mc/count @db "publications" {:ts {$gt (t/date-time 2015 2 1)}})
 
-
-  )
+(defn backup-yesterday
+  "Write last day's collection to specific folder"
+  [database coll folder-path]
+  (backup (t/minus (t/today) (t/days 1)) database coll folder-path))
