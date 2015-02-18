@@ -43,9 +43,15 @@
 (defjob MentionsBackup [ctx]
   (let [path (get (qc/from-job-data ctx) "folder-path")]
       (info "Writing mentions backup...")
-    (db/backup-yesterday "athena" "mentions" path)))
+      (db/backup-yesterday "athena" "mentions" path)))
 
-;; Schedules
+(defjob HashtagsBackup [ctx]
+  (let [path (get (qc/from-job-data ctx) "folder-path")]
+      (info "Writing hashtags backup...")
+      (db/backup-yesterday "athena" "hashtags" path)))
+
+
+;; --- Schedules ---
 
 (defn tweets-backup-schedule
   "Create a schedule to backup the tweets at 3 am"
@@ -180,6 +186,25 @@
     (qs/schedule job trigger)))
 
 
+(defn hashtags-backup-schedule
+  "Create a schedule to backup the mentions at 3.30 am"
+  [path]
+  (let [job (j/build
+             (j/of-type HashtagsBackup)
+             (j/using-job-data {"folder-path" path})
+             (j/with-identity (j/key "jobs.hashtagsbackup.1")))
+        tk (t/key "triggers.8")
+        trigger (t/build
+                 (t/with-identity tk)
+                 (t/start-now)
+                 (t/with-schedule
+                   (schedule
+                    (every-day)
+                    (starting-daily-at (time-of-day 3 35 00))
+                    (ending-daily-at (time-of-day 3 35 01)))))]
+    (qs/schedule job trigger)))
+
+
 (defn start-scheduler
   "Run the schedules"
   [path]
@@ -191,4 +216,5 @@
   (pubs-backup-schedule path)
   (urls-backup-schedule path)
   (users-backup-schedule path)
-  (mentions-backup-schedule path))
+  (mentions-backup-schedule path)
+  (hashtags-backup-schedule path))
