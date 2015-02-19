@@ -165,7 +165,6 @@
   (let [raw-html (if (= url :not-available)
                    nil
                    (slurp url))]
-    (debug "Storing raw html")
     (mc/insert-and-return
      @db
      "htmls"
@@ -274,6 +273,5 @@
 
   (def suids (map :_id (mc/find-maps @db "users" {:screen_name {$in news-accounts}})))
 
-  (mc/count @db "htmls" {:ts {$gt (t/date-time 2015 2 19)}})
 
   )
