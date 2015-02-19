@@ -46,22 +46,23 @@
   "Define mongodb indices on first start"
   []
   (do
-    (mc/ensure-index @db "articles" (array-map :ts 1))
-    (mc/ensure-index @db "origins" (array-map :ts 1))
-    (mc/ensure-index @db "origins" (array-map :source 1))
-    (mc/ensure-index @db "origins" (array-map :tweet 1))
-    (mc/ensure-index @db "origins" (array-map :article 1 :source 1))
     (mc/ensure-index @db "publications" (array-map :tweet 1))
     (mc/ensure-index @db "publications" (array-map :user 1))
     (mc/ensure-index @db "publications" (array-map :ts 1))
     (mc/ensure-index @db "publications" (array-map :url 1))
     (mc/ensure-index @db "reactions" (array-map :source 1))
+    (mc/ensure-index @db "reactions" (array-map :ts 1))
     (mc/ensure-index @db "reactions" (array-map :publication 1))
     (mc/ensure-index @db "urls" (array-map :url 1))
+    (mc/ensure-index @db "urls" (array-map :ts 1))
     (mc/ensure-index @db "hashtags" (array-map :text 1))
+    (mc/ensure-index @db "hashtags" (array-map :ts 1))
     (mc/ensure-index @db "mentions" (array-map :user 1))
+    (mc/ensure-index @db "mentions" (array-map :ts 1))
     (mc/ensure-index @db "mentions" (array-map :publication 1))
+    (mc/ensure-index @db "htmls" (array-map :ts 1))
     (mc/ensure-index @db "users" (array-map :id 1))
+    (mc/ensure-index @db "users" (array-map :ts 1))
     (mc/ensure-index @db "tweets" (array-map :user.screen_name 1))
     (mc/ensure-index @db "tweets" (array-map :id_str 1))
     (mc/ensure-index @db "tweets" (array-map :id 1))
@@ -100,32 +101,15 @@
       nil)))
 
 
-
-
-
-(defn fetch-url [url]
-  (try
-    (enlive/html-resource (java.net.URL. url))
-    (catch Exception e :error)))
-
-
-(defn fetch-url-title
-  "fetch url and extract title"
-  [url]
-  (let [res (fetch-url url)]
-    (if (= :error res)
-      url
-      (-> res (enlive/select [:head :title]) first :content first))))
-
-
-(defn store-user [{{:keys [id screen_name followers_count created_at]} :user}]
+(defn store-user [{{:keys [id screen_name followers_count created_at]} :user ts :created_at}]
   (let [date (f/parse custom-formatter created_at)]
       (mc/insert-and-return
        @db
        "users"
        {:id id
         :screen_name screen_name
-        :created_at date})))
+        :created_at date
+        :ts ts})))
 
 
 (defn store-publication [uid tid url-id type hids ts]
@@ -145,23 +129,25 @@
 
 
 (defn store-mention
-  [uid pid]
+  [uid pid ts]
   (mc/insert @db "mentions" {:user uid
+                             :ts ts
                              :publication pid}))
 
 
 (defn store-hashtag [text ts]
   (mc/insert-and-return @db "hashtags" {:text text
-                                        :first-seen ts}))
+                                        :ts ts}))
 
 
 (defn store-reaction
-  [pub-id source-id]
+  [pub-id source-id ts]
   (mc/insert @db "reactions" {:publication pub-id
+                              :ts ts
                               :source source-id}))
 
 
-(defn get-user-id [{:keys [user] :as status}]
+(defn get-user-id [{:keys [user created_at] :as status}]
   (if-let [uid (:_id (mc/find-one-as-map @db "users" {:id (:id user)}))]
     uid
     (:_id (store-user status))))
@@ -175,14 +161,16 @@
 
 (defn store-raw-html
   "Fetch html document and store raw binary in database"
-  [{:keys [url content-type ts] :as expanded-url} url-id]
+  [{:keys [url content-type] :as expanded-url} url-id ts]
   (let [raw-html (if (= url :not-available)
                    nil
                    (slurp url))]
+    (debug "Storing raw html")
     (mc/insert-and-return
      @db
      "htmls"
      {:raw raw-html
+      :ts ts
       :url url-id})))
 
 
@@ -197,7 +185,7 @@
         (if source?
           (let [new-url-id (:_id (store-url (:url expanded-url) uid tid ts))]
             (do
-              (store-raw-html expanded-url new-url-id)
+              (store-raw-html expanded-url new-url-id ts)
               new-url-id))
           nil))
       nil)))
@@ -224,7 +212,7 @@
                         nil)
         pub-id (:_id (do (store-publication uid tid nil type hids ts)))]
     (when source-pub-id
-      (store-reaction pub-id source-pub-id))))
+      (store-reaction pub-id source-pub-id ts))))
 
 
 (defn store-raw-tweet
@@ -234,9 +222,9 @@
         doc (update-in status [:created_at] (fn [x] (f/parse custom-formatter x)))
         {:keys [user entities retweeted_status in_reply_to_status_id created_at _id]
          :as record} (from-db-object (mc/insert-and-return @db "tweets" (merge doc {:_id oid})) true)
-        uid (get-user-id status)
+        uid (get-user-id record)
         hids (doall (map (fn [{:keys [text]}] (get-hashtag-id text created_at)) (:hashtags entities)))
-        type (get-type status)
+        type (get-type record)
         source? (news-accounts (:screen_name user))]
     (case type
       :retweet (do (store-simple-reaction uid _id :retweet hids created_at (:id retweeted_status)))
@@ -249,10 +237,9 @@
                            (let [source-pub-id (or (doall (map #(:_id (mc/find-one-as-map @db "publications" {:url %})) url-ids)))
                                  pub-id (:_id (store-publication uid _id nil :share hids created_at))]
                              (when source-pub-id
-                               (store-reaction pub-id source-pub-id)))))
+                               (store-reaction pub-id source-pub-id created_at)))))
       :unrelated (store-publication uid _id nil :unrelated hids created_at))
     record))
-
 
 
 ;; --- MONGO DATA EXPORT/IMPORT ---
@@ -281,3 +268,12 @@
   "Write last day's collection to specific folder"
   [database coll folder-path]
   (backup (t/minus (t/today) (t/days 1)) database coll folder-path))
+
+
+(comment
+
+  (def suids (map :_id (mc/find-maps @db "users" {:screen_name {$in news-accounts}})))
+
+  (mc/count @db "htmls" {:ts {$gt (t/date-time 2015 2 19)}})
+
+  )

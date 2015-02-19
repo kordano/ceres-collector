@@ -56,10 +56,7 @@
 
   (def stop-stream
     (let [{{:keys [follow track credentials]} :app} @server-state]
-      (start-filter-stream follow track (fn [s]
-                                          (let [{:keys [text user]} (store-raw-tweet s)]
-                                            (debug (str "@" (:screen_name user) ": " text))))
-                           credentials)))
+      (start-filter-stream follow track store-raw-tweet credentials)))
 
   (stop-stream)
 
