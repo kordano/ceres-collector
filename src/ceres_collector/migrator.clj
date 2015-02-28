@@ -36,7 +36,7 @@
        "hashtags"
        {:text text
         :ts (t/now)})
-      from-db-object
+      (from-db-object true)
       :_id))
 
 
@@ -49,7 +49,7 @@
           :name screen_name
           :created_at date
           :ts (t/now)})
-        from-db-object
+      (from-db-object true)
         :_id)))
 
 
@@ -59,7 +59,7 @@
        "urls"
        {:path url
         :ts (t/now)})
-      from-db-object
+      (from-db-object true)
       :_id))
 
 
@@ -71,8 +71,9 @@
         :source source
         :ts (t/now)
         :tweet tid})
-      from-db-object
+      (from-db-object true)
       :_id))
+
 
 (defn store-html
   "Fetch html document and store raw binary in database"
@@ -87,8 +88,8 @@
       :ts (t/now)
       :url url-id})))
 
+
 (comment
-  (set-db "athena")
 
   ;; migration db
   (def db2 (let [^MongoOptions opts (mg/mongo-options :threads-allowed-to-block-for-connection-multiplier 300)
@@ -96,7 +97,7 @@
              (mg/get-db (mg/connect sa opts) "demeter")))
 
 
-  ;; migrate users
+  ;; migrate
   (->> (mc/find-maps @db "publications")
        (pmap (fn [{:keys [url tweet user hashtags type]}]
                (let [text (:text (mc/find-map-by-id @db "tweets" tweet))
@@ -115,11 +116,5 @@
                 smid (mc/find-one-as-map db2 "messages" {:tweet stid})
                 mid (mc/find-one-as-map db2 "messages" {:tweet tid})]
             (store-reference mid smid t db2)))))
-
-
-
-
-
-
 
   )
