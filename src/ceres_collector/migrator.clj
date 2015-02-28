@@ -31,45 +31,63 @@
 
 
 (defn store-hashtag [text db]
-  (mc/insert-and-return
-   db
-   "hashtags-2"
-   {:text text
-    :ts (t/now)}))
+  (-> (mc/insert-and-return
+       db
+       "hashtags"
+       {:text text
+        :ts (t/now)})
+      from-db-object
+      :_id))
 
 
 (defn store-author [{:keys [screen_name id created_at]} db]
   (let [date (f/parse custom-formatter created_at)]
-    (mc/insert-and-return
-     db
-     "authors"
-     {:id id
-      :name screen_name
-      :created_at date
-      :ts (t/now)})))
+    (-> (mc/insert-and-return
+         db
+         "authors"
+         {:id id
+          :name screen_name
+          :created_at date
+          :ts (t/now)})
+        from-db-object
+        :_id)))
 
 
 (defn store-url [url db]
-  (mc/insert-and-return
-   db
-   "urls-2"
-   {:path url
-    :ts (t/now)}))
+  (-> (mc/insert-and-return
+       db
+       "urls"
+       {:path url
+        :ts (t/now)})
+      from-db-object
+      :_id))
 
 
-(defn store-message
-  [text source tid db]
-  (mc/insert-and-return
-   db
-   "messages"
-   {:text text
-    :source source
-    :ts (t/now) :tweet tid}))
+(defn store-message [text source tid db]
+  (-> (mc/insert-and-return
+       db
+       "messages"
+       {:text text
+        :source source
+        :ts (t/now)
+        :tweet tid})
+      from-db-object
+      :_id))
 
-
+(defn store-html
+  "Fetch html document and store raw binary in database"
+  [{:keys [url content-type] :as expanded-url} url-id db]
+  (let [raw-html (if (= url :not-available)
+                   nil
+                   (slurp url))]
+    (mc/insert-and-return
+     db
+     "htmls"
+     {:raw raw-html
+      :ts (t/now)
+      :url url-id})))
 
 (comment
-
   (set-db "athena")
 
   ;; migration db
@@ -87,12 +105,21 @@
                              :_id)]
                  (map #(store-reference mid % "tag" db2) hashtags)
                  (store-reference mid user "pub" db2)
-                 (when url
-                   (store-reference mid url "url" db2)))
-                 ))))
+                 (when url (store-reference mid url ))))))
 
-  (->> (mc/find-maps @db "publications")
-       (take 100)
-       (map :type)
-       (into #{}))
+  (->> (mc/find-maps @db "reactions")
+       (pmap
+        (fn [{:keys [source publication]}]
+          (let [{stid :tweet} (mc/find-map-by-id @db "publications" source)
+                {tid :tweet t :type} (mc/find-map-by-id @db "publications" publication)
+                smid (mc/find-one-as-map db2 "messages" {:tweet stid})
+                mid (mc/find-one-as-map db2 "messages" {:tweet tid})]
+            (store-reference mid smid t db2)))))
+
+
+
+
+
+
+
   )
