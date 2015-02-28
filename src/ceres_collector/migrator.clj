@@ -20,9 +20,9 @@
 
 (defn store-reference
   "Store reference between tweet and another entity"
-  [source target type db]
+  [source target type]
   (mc/insert-and-return
-   db
+   @db
    "references"
    {:source source
     :target target
@@ -30,32 +30,32 @@
     :ts (t/now)}))
 
 
-(defn store-hashtag [text db]
+(defn store-hashtag [text]
   (-> (mc/insert-and-return
-       db
-       "hashtags"
+       @db
+       "tags"
        {:text text
         :ts (t/now)})
       (from-db-object true)
       :_id))
 
 
-(defn store-author [{:keys [screen_name id created_at]} db]
+(defn store-author [{:keys [screen_name id created_at]}]
   (let [date (f/parse custom-formatter created_at)]
     (-> (mc/insert-and-return
-         db
-         "authors"
+         @db
+         "users"
          {:id id
           :name screen_name
           :created_at date
           :ts (t/now)})
-      (from-db-object true)
+        (from-db-object true)
         :_id)))
 
 
-(defn store-url [url db]
+(defn store-url [url]
   (-> (mc/insert-and-return
-       db
+       @db
        "urls"
        {:path url
         :ts (t/now)})
@@ -63,9 +63,9 @@
       :_id))
 
 
-(defn store-message [text source tid db]
+(defn store-message [text source tid]
   (-> (mc/insert-and-return
-       db
+       @db
        "messages"
        {:text text
         :source source
@@ -77,12 +77,12 @@
 
 (defn store-html
   "Fetch html document and store raw binary in database"
-  [{:keys [url content-type] :as expanded-url} url-id db]
+  [{:keys [url content-type] :as expanded-url} url-id]
   (let [raw-html (if (= url :not-available)
                    nil
                    (slurp url))]
     (mc/insert-and-return
-     db
+     @db
      "htmls"
      {:raw raw-html
       :ts (t/now)
@@ -91,14 +91,16 @@
 
 (comment
 
+  (set-db "demeter")
+
   ;; migration db
   (def db2 (let [^MongoOptions opts (mg/mongo-options :threads-allowed-to-block-for-connection-multiplier 300)
                  ^ServerAddress sa  (mg/server-address (or (System/getenv "DB_PORT_27017_TCP_ADDR") "127.0.0.1") 27017)]
-             (mg/get-db (mg/connect sa opts) "demeter")))
+             (mg/get-db (mg/connect sa opts) "athena")))
 
 
   ;; migrate
-  (->> (mc/find-maps @db "publications")
+  (->> (mc/find-maps db2 "publications")
        (pmap (fn [{:keys [url tweet user hashtags type]}]
                (let [text (:text (mc/find-map-by-id @db "tweets" tweet))
                      mid (-> (store-message text (= type "source") tweet db2)

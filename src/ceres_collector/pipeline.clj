@@ -13,14 +13,14 @@
             [clj-time.coerce :as c]
             [clj-time.periodic :as p]
             [ceres-collector.db :refer [db custom-formatter news-accounts]]
-            [ceres-collector.migrator :as m]
+            [ceres-collector.migrator :as d]
             [taoensso.timbre :as timbre])
   (:import org.bson.types.ObjectId))
 
 (timbre/refer-timbre)
 
 (defn expand-url
-  "Expands shortened url strings, thanks to http://www.philippeadjiman.com/blog/2009/09/07/the-trick-to-write-a-fast-universal-java-url-expander/"
+  "Expands shortened url strings, thanks to http://www.philippeadjiman.cod/blog/2009/09/07/the-trick-to-write-a-fast-universal-java-url-expander/"
   [url-str]
   (let [url (java.net.URL. url-str)
         conn (try (.openConnection url)
@@ -50,7 +50,7 @@
   (if-let [uid (:_id (mc/find-one-as-map @db "users" {:id (:id user)}))]
     uid
     (if-not mention
-      (m/store-author user db)
+      (d/store-author user)
       nil)))
 
 
@@ -59,7 +59,7 @@
   [text]
   (if-let [hid (:_id (mc/find-one-as-map @db "tags" {:text text}))]
     hid
-    (m/store-hashtag text db)))
+    (d/store-hashtag text)))
 
 
 (defn get-source-id
@@ -80,9 +80,9 @@
       (if-let [x-url-id (:_id (mc/find-one-as-map @db "urls" {:url (:url expanded-url)}))]
         x-url-id
         (if source?
-          (let [new-url-id (m/store-url (:url expanded-url) db)]
+          (let [new-url-id (d/store-url (:url expanded-url))]
             (do
-              (m/store-html expanded-url new-url-id)
+              (d/store-html expanded-url new-url-id)
               new-url-id))
           nil))
       nil)))
@@ -105,7 +105,7 @@
         doc (update-in status [:created_at] (fn [x] (f/parse custom-formatter x)))
         {:keys [id user entities retweeted_status in_reply_to_status_id created_at _id text]
          :as record} (from-db-object (mc/insert-and-return @db "tweets" (merge doc {:_id oid})) true)
-        mid (m/store-message text _id id db)
+        mid (d/store-message text _id id db)
         aid (get-author-id (:user record))
         hids (doall (map (fn [{:keys [text]}] (get-hashtag-id text db)) (:hashtags entities)))
         url-ids (doall (map get-url-id (:urls entities)))
