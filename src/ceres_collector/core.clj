@@ -46,11 +46,19 @@
   (timbre/set-config! [:shared-appender-config :spit-filename] (:logfile @server-state))
   (info "Starting twitter collector...")
   (when (:init? @server-state) (init-mongo))
-  (info @server-state)
   (let [{{:keys [follow track credentials]} :app} @server-state]
-    (start-filter-stream follow track pipeline/start credentials))
+    (start-filter-stream
+     follow
+     track
+     #_(fn [status]
+       (do
+         (debug "STATUS - " (str "@" (get-in status [:user :screen_name])) ":"  (:text status))
+         (pipeline/start status)))
+     pipeline/start
+     credentials))
   (when (:backup? @server-state)
     (start-scheduler (:backup-folder @server-state))))
+
 
 (comment
 
