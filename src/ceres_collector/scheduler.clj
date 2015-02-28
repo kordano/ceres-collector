@@ -13,42 +13,42 @@
 (defjob HtmlsBackup [ctx]
   (let [path (get (qc/from-job-data ctx) "folder-path")]
       (info "Writing htmls backup...")
-    (db/backup-yesterday "athena" "htmls" path)))
+    (db/backup-yesterday "demeter" "htmls" path)))
 
 (defjob TweetBackup [ctx]
   (let [path (get (qc/from-job-data ctx) "folder-path")]
       (info "Writing tweets backup...")
-      (db/backup-yesterday "athena" "tweets" path)))
+      (db/backup-yesterday "demeter" "tweets" path)))
 
 (defjob ReactionsBackup [ctx]
   (let [path (get (qc/from-job-data ctx) "folder-path")]
       (info "Writing reactions backup...")
-    (db/backup-yesterday "athena" "reactions" path)))
+    (db/backup-yesterday "demeter" "reactions" path)))
 
 (defjob PubsBackup [ctx]
   (let [path (get (qc/from-job-data ctx) "folder-path")]
       (info "Writing publications backup...")
-    (db/backup-yesterday "athena" "publications" path)))
+    (db/backup-yesterday "demeter" "publications" path)))
 
 (defjob UrlsBackup [ctx]
   (let [path (get (qc/from-job-data ctx) "folder-path")]
       (info "Writing urls backup...")
-      (db/backup-yesterday "athena" "urls" path)))
+      (db/backup-yesterday "demeter" "urls" path)))
 
 (defjob UsersBackup [ctx]
   (let [path (get (qc/from-job-data ctx) "folder-path")]
       (info "Writing users backup...")
-    (db/backup-yesterday "athena" "users" path)))
+    (db/backup-yesterday "demeter" "users" path)))
 
 (defjob MentionsBackup [ctx]
   (let [path (get (qc/from-job-data ctx) "folder-path")]
       (info "Writing mentions backup...")
-      (db/backup-yesterday "athena" "mentions" path)))
+      (db/backup-yesterday "demeter" "mentions" path)))
 
 (defjob HashtagsBackup [ctx]
   (let [path (get (qc/from-job-data ctx) "folder-path")]
       (info "Writing hashtags backup...")
-      (db/backup-yesterday "athena" "hashtags" path)))
+      (db/backup-yesterday "demeter" "hashtags" path)))
 
 
 ;; --- Schedules ---
