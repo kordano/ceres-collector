@@ -77,7 +77,7 @@
 
 (defn store-html
   "Fetch html document and store raw binary in database"
-  [{:keys [url content-type] :as expanded-url} url-id]
+  [url url-id]
   (let [raw-html (if (= url :not-available)
                    nil
                    (slurp url))]
@@ -87,6 +87,15 @@
      {:raw raw-html
       :ts (t/now)
       :url url-id})))
+
+
+(defn store-tweet
+  "Stores tweet, parses date"
+  [status]
+  (let [new-status (update-in status [:created_at] (fn [x] (f/parse custom-formatter x)))]
+    (from-db-object
+     (mc/insert-and-return @db "tweets" new-status)
+     true)))
 
 
 (comment
@@ -102,21 +111,25 @@
   ;; migrate
   (->> (mc/find-maps db2 "publications")
        (pmap (fn [{:keys [url tweet user hashtags type]}]
-               (let [text (:text (mc/find-map-by-id @db "tweets" tweet))
+               (let [text (:text (mc/find-map-by-id db2 "tweets" tweet))
                      mid (-> (store-message text (= type "source") tweet db2)
                              from-db-object
                              :_id)]
-                 (map #(store-reference mid % "tag" db2) hashtags)
-                 (store-reference mid user "pub" db2)
-                 (when url (store-reference mid url ))))))
+                 (map #(store-reference mid % "tag") hashtags)
+                 (store-reference mid user "pub")
+                 (when url (store-reference mid url))))))
+
 
   (->> (mc/find-maps @db "reactions")
        (pmap
         (fn [{:keys [source publication]}]
-          (let [{stid :tweet} (mc/find-map-by-id @db "publications" source)
-                {tid :tweet t :type} (mc/find-map-by-id @db "publications" publication)
-                smid (mc/find-one-as-map db2 "messages" {:tweet stid})
-                mid (mc/find-one-as-map db2 "messages" {:tweet tid})]
-            (store-reference mid smid t db2)))))
+          (let [{stid :tweet} (mc/find-map-by-id db2 "publications" source)
+                {tid :tweet t :type} (mc/find-map-by-id db2 "publications" publication)
+                smid (mc/find-one-as-map @db "messages" {:tweet stid})
+                mid (mc/find-one-as-map @db "messages" {:tweet tid})]
+            (store-reference mid smid t)))))
+
+
+
 
   )

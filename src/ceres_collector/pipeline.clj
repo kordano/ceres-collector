@@ -62,30 +62,22 @@
     (d/store-hashtag text)))
 
 
-(defn get-source-id
-  "Find source message id of a retweet or reply"
-  [source-tid db]
-  (if-let [source (mc/find-one-as-map db "messages" {:tid source-tid})]
-    (:_id source)
-    nil))
-
-
-
 (defn get-url-id
   "Get url id if exists otherwise store url"
-  [url uid tid ts source?]
-  (if-let [url-id (:_id (mc/find-one-as-map @db "urls" {:url url}))]
+  [url news?]
+  (if-let [url-id (:_id (mc/find-one-as-map @db "urls" {:path url}))]
     url-id
     (if-let [expanded-url (expand-url url)]
-      (if-let [x-url-id (:_id (mc/find-one-as-map @db "urls" {:url (:url expanded-url)}))]
+      (if-let [x-url-id (:_id (mc/find-one-as-map @db "urls" {:path (:url expanded-url)}))]
         x-url-id
-        (if source?
-          (let [new-url-id (d/store-url (:url expanded-url))]
-            (do
-              (d/store-html expanded-url new-url-id)
-              new-url-id))
-          nil))
-      nil)))
+        (let [new-url-id (d/store-url (:url expanded-url))]
+          (when news?
+            (d/store-html (:url expanded-url) new-url-id))
+          new-url-id))
+      (let [new-url-id (d/store-url url)]
+          (when news?
+            (d/store-html url new-url-id))
+          new-url-id))))
 
 
 (defn get-type
@@ -96,19 +88,39 @@
     (if retweeted_status
       :retweet
       (if-not (empty? (:urls entities))
-        :source-or-share
+        :share
         :unrelated))))
 
 
-(defn start [status]
-  (let [oid (ObjectId.)
-        doc (update-in status [:created_at] (fn [x] (f/parse custom-formatter x)))
-        {:keys [id user entities retweeted_status in_reply_to_status_id created_at _id text]
-         :as record} (from-db-object (mc/insert-and-return @db "tweets" (merge doc {:_id oid})) true)
-        mid (d/store-message text _id id db)
-        aid (get-author-id (:user record))
-        hids (doall (map (fn [{:keys [text]}] (get-hashtag-id text db)) (:hashtags entities)))
-        url-ids (doall (map get-url-id (:urls entities)))
-        type (get-type record)
-        source? (news-accounts (:screen_name user))]
-    record))
+(defn start
+  "Start the pipeline storing everything and everyone"
+  [status]
+  (let [{:keys [id user entities text id _id] :as tweet} (d/store-tweet status)
+        news? (news-accounts (:screen_name user))
+        mid (d/store-message text _id id)
+        aid (get-author-id user)
+        hids (doall (map (fn [{:keys [text]}] (get-hashtag-id text)) (:hashtags entities)))
+        url-ids (doall (map #(get-url-id (:expanded_url %)) (:urls entities)))
+        me-ids (doall (map #(get-author-id %) (:mentions entities)))
+        type (get-type tweet)]
+    (when news?
+      (doall (map #(d/store-reference % mid "source") url-ids)))
+    (d/store-reference aid mid "pub")
+    (map #(d/store-reference mid % "url") url-ids)
+    (map #(d/store-hashtag mid % "tag") hids)
+    (case type
+      :reply (let [sid (mc/find-one-as-map @db "messages" {:tid (:in_reply_to_status_id tweet)})]
+               (d/store-reference mid sid "reply"))
+      :retweet (let [sid (mc/find-one-as-map @db "messages" {:tid (-> tweet :retweeted_status :id)})]
+                 (d/store-reference mid sid "retweet"))
+      :share (if news?
+               nil
+               (let [sids (doall (map #(mc/find-one-as-map @db "references" {:source %}) url-ids))]
+                 (doall (map #(d/store-reference mid % "share") sids))))
+      :unrelated (d/store-reference mid nil "unrelated"))))
+
+
+(->> {:entities.mentions {$ne nil}}
+     (mc/find-maps @db "tweets")
+     first
+     :entities)
