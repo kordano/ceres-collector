@@ -101,7 +101,7 @@
         mid (d/store-message text _id id)
         aid (get-author-id user)
         hids (doall (map (fn [{:keys [text]}] (get-hashtag-id text)) (:hashtags entities)))
-        url-ids (doall (map #(get-url-id (:expanded_url %)) (:urls entities)))
+        url-ids (doall (map #(get-url-id (:expanded_url %) news?) (:urls entities)))
         me-ids (doall (map #(get-author-id %) (:mentions entities)))
         type (get-type tweet)]
     (when news?

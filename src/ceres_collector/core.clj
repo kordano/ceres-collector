@@ -22,7 +22,9 @@
          (assoc-in [:app :out-chans] [])
          (assoc-in [:app :recent-tweets] [])
          (assoc-in [:app :recent-articles] [])))
-    (set-db (-> @state :app :db))))
+    (set-db (-> @state :app :db))
+    (debug @state)))
+
 
 
 (defn start-stream [state]
@@ -54,16 +56,18 @@
 
   (initialize server-state "opt/test-config.edn")
 
-  @server-state
-
   (def stop-stream
     (let [{{:keys [follow track credentials]} :app} @server-state]
-      (start-filter-stream follow track pipeline/start credentials)))
+      (start-filter-stream
+       follow
+       track
+       (fn [status]
+         (do
+           (debug "STATUS - " (str "@" (get-in status [:user :screen_name])) ":"  (:text status))
+           (pipeline/start status))) credentials)))
 
   (stop-stream)
 
   (def g (start-stream server-state))
 
-  (>!! (first g) {:topic :stop-stream})
-
-)
+  (>!! (first g) {:topic :stop-stream}))
