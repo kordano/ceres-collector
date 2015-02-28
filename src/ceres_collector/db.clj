@@ -13,232 +13,131 @@
             [clj-time.core :as t]
             [clj-time.coerce :as c]
             [clj-time.periodic :as p]
-            [taoensso.timbre :as timbre]
-            )
+            [taoensso.timbre :as timbre])
   (:import org.bson.types.ObjectId))
 
 
 (timbre/refer-timbre)
 
-
-(def db (atom
-         (let [^MongoOptions opts (mg/mongo-options :threads-allowed-to-block-for-connection-multiplier 300)
-               ^ServerAddress sa  (mg/server-address (or (System/getenv "DB_PORT_27017_TCP_ADDR") "127.0.0.1") 27017)]
-           (mg/get-db (mg/connect sa opts) "athena"))))
-
+(def db
+  (atom
+   (let [^MongoOptions opts (mg/mongo-options :threads-allowed-to-block-for-connection-multiplier 300)
+         ^ServerAddress sa  (mg/server-address (or (System/getenv "DB_PORT_27017_TCP_ADDR") "127.0.0.1") 27017)]
+     (mg/get-db (mg/connect sa opts) "athena"))))
 
 (def time-interval {$gt (t/date-time 2014 8 1) $lt (t/date-time 2014 9 1)})
-
 
 (defn set-db [name]
   (let [^MongoOptions opts (mg/mongo-options :threads-allowed-to-block-for-connection-multiplier 300)
         ^ServerAddress sa  (mg/server-address (or (System/getenv "DB_PORT_27017_TCP_ADDR") "127.0.0.1") 27017)]
     (reset! db (mg/get-db (mg/connect sa opts) name))))
 
-
 (def custom-formatter (f/formatter "E MMM dd HH:mm:ss Z YYYY"))
-
-
-(def news-accounts #{"FAZ_NET" "dpa" "tagesschau" "SPIEGELONLINE" "SZ" "BILD" "DerWesten" "ntvde" "tazgezwitscher" "welt" "ZDFheute" "N24_de" "sternde" "focusonline"} )
-
 
 (defn init-mongo
   "Define mongodb indices on first start"
   []
   (do
-    (mc/ensure-index @db "publications" (array-map :tweet 1))
-    (mc/ensure-index @db "publications" (array-map :user 1))
-    (mc/ensure-index @db "publications" (array-map :ts 1))
-    (mc/ensure-index @db "publications" (array-map :url 1))
-    (mc/ensure-index @db "reactions" (array-map :source 1))
-    (mc/ensure-index @db "reactions" (array-map :ts 1))
-    (mc/ensure-index @db "reactions" (array-map :publication 1))
     (mc/ensure-index @db "urls" (array-map :url 1))
     (mc/ensure-index @db "urls" (array-map :ts 1))
-    (mc/ensure-index @db "hashtags" (array-map :text 1))
-    (mc/ensure-index @db "hashtags" (array-map :ts 1))
-    (mc/ensure-index @db "mentions" (array-map :user 1))
-    (mc/ensure-index @db "mentions" (array-map :ts 1))
-    (mc/ensure-index @db "mentions" (array-map :publication 1))
+    (mc/ensure-index @db "refs" (array-map :source 1))
+    (mc/ensure-index @db "refs" (array-map :target 1))
+    (mc/ensure-index @db "refs" (array-map :type 1))
+    (mc/ensure-index @db "refs" (array-map :ts 1))
+    (mc/ensure-index @db "tags" (array-map :text 1))
+    (mc/ensure-index @db "tags" (array-map :ts 1))
+    (mc/ensure-index @db "message" (array-map :ts 1))
+    (mc/ensure-index @db "message" (array-map :text 1))
+    (mc/ensure-index @db "message" (array-map :tweet 1))
+    (mc/ensure-index @db "message" (array-map :tid 1))
+    (mc/ensure-index @db "message" (array-map :ts 1))
     (mc/ensure-index @db "htmls" (array-map :ts 1))
     (mc/ensure-index @db "users" (array-map :id 1))
     (mc/ensure-index @db "users" (array-map :ts 1))
     (mc/ensure-index @db "tweets" (array-map :user.screen_name 1))
-    (mc/ensure-index @db "tweets" (array-map :id_str 1))
     (mc/ensure-index @db "tweets" (array-map :id 1))
-    (mc/ensure-index @db "tweets" (array-map :retweeted_status.id_str 1))
-    (mc/ensure-index @db "tweets" (array-map :in_reply_to_status_id_str 1))
     (mc/ensure-index @db "tweets" (array-map :retweeted_status.id 1))
     (mc/ensure-index @db "tweets" (array-map :in_reply_to_status_id 1))
-    (mc/ensure-index @db "tweets" (array-map :in_reply_to_user_id_str 1))
-    (mc/ensure-index @db "tweets" (array-map :created_at 1))
-    (mc/ensure-index @db "tweets" (array-map :entities.user_mentions.screen_name 1 :retweeted_status.user.screen_name 1 :in_reply_to_screen_name 1))))
+    (mc/ensure-index @db "tweets" (array-map :created_at 1))))
 
 
-(defn expand-url
-  "Expands shortened url strings, thanks to http://www.philippeadjiman.com/blog/2009/09/07/the-trick-to-write-a-fast-universal-java-url-expander/"
-  [url-str]
-  (let [url (java.net.URL. url-str)
-        conn (try (.openConnection url)
-                  (catch Exception e (do (error (str e))
-                                         false)))]
-    (if conn
-      (do (.setInstanceFollowRedirects conn false)
-          (try
-            (do
-              (.connect conn)
-              (let [expanded-url (.getHeaderField conn "Location")
-                    content-type (.getContentType conn)]
-                (try
-                  (do (.close (.getInputStream conn))
-                      {:url expanded-url
-                       :content-type content-type})
-                  (catch Exception e (do (error (str e))
-                                         {:url :not-available
-                                          :content-type content-type})))))
-            (catch Exception e (do (error (str e))
-                                   nil))))
-      nil)))
+(defn store-reference
+  "Store reference between tweet and another entity"
+  [source target type]
+  (mc/insert-and-return
+   @db
+   "refs"
+   {:source source
+    :target target
+    :type type
+    :ts (t/now)}))
 
 
-(defn store-user [{{:keys [id screen_name followers_count created_at]} :user ts :created_at}]
-  (let [date (f/parse custom-formatter created_at)]
-      (mc/insert-and-return
+(defn store-hashtag [text]
+  (-> (mc/insert-and-return
        @db
-       "users"
-       {:id id
-        :screen_name screen_name
-        :created_at date
-        :ts ts})))
+       "tags"
+       {:text text
+        :ts (t/now)})
+      (from-db-object true)
+      :_id))
 
 
-(defn store-publication [uid tid url-id type hids ts]
-  (mc/insert-and-return @db "publications" {:user uid
-                                            :tweet tid
-                                            :url url-id
-                                            :type type
-                                            :hashtags hids
-                                            :ts ts}))
+(defn store-author [{:keys [screen_name id created_at]}]
+  (let [date (f/parse custom-formatter created_at)]
+    (-> (mc/insert-and-return
+         @db
+         "users"
+         {:id id
+          :name screen_name
+          :created_at date
+          :ts (t/now)})
+        (from-db-object true)
+        :_id)))
 
 
-(defn store-url [url uid tid ts]
-  (mc/insert @db "urls" {:url url
-                         :user uid
-                         :tweet tid
-                         :ts ts}))
+(defn store-url [url]
+  (-> (mc/insert-and-return
+       @db
+       "urls"
+       {:path url
+        :ts (t/now)})
+      (from-db-object true)
+      :_id))
 
 
-(defn store-mention
-  [uid pid ts]
-  (mc/insert @db "mentions" {:user uid
-                             :ts ts
-                             :publication pid}))
+(defn store-message [text source tid]
+  (-> (mc/insert-and-return
+       @db
+       "messages"
+       {:text text
+        :source source
+        :ts (t/now)
+        :tweet tid})
+      (from-db-object true)
+      :_id))
 
 
-(defn store-hashtag [text ts]
-  (mc/insert-and-return @db "hashtags" {:text text
-                                        :ts ts}))
-
-
-(defn store-reaction
-  [pub-id source-id ts]
-  (mc/insert @db "reactions" {:publication pub-id
-                              :ts ts
-                              :source source-id}))
-
-
-(defn get-user-id [{:keys [user created_at] :as status}]
-  (if-let [uid (:_id (mc/find-one-as-map @db "users" {:id (:id user)}))]
-    uid
-    (:_id (store-user status))))
-
-
-(defn get-hashtag-id [text ts]
-  (if-let [hid (:_id (mc/find-one-as-map @db "hashtags" {:text text}))]
-    hid
-    (:_id (store-hashtag text ts))))
-
-
-(defn store-raw-html
+(defn store-html
   "Fetch html document and store raw binary in database"
-  [{:keys [url content-type] :as expanded-url} url-id ts]
-  (let [raw-html (if (= url :not-available)
-                   nil
-                   (slurp url))]
+  [url url-id]
+  (let [raw-html (if (= url :not-available) nil (slurp url))]
     (mc/insert-and-return
      @db
      "htmls"
      {:raw raw-html
-      :ts ts
+      :ts (t/now)
       :url url-id})))
 
 
-(defn get-url-id
-  "Get url id if exists otherwise store url"
-  [url uid tid ts source?]
-  (if-let [url-id (:_id (mc/find-one-as-map @db "urls" {:url url}))]
-    url-id
-    (if-let [expanded-url (expand-url url)]
-      (if-let [x-url-id (:_id (mc/find-one-as-map @db "urls" {:url (:url expanded-url)}))]
-        x-url-id
-        (if source?
-          (let [new-url-id (:_id (store-url (:url expanded-url) uid tid ts))]
-            (do
-              (store-raw-html expanded-url new-url-id ts)
-              new-url-id))
-          nil))
-      nil)))
-
-
-(defn get-type
-  "Dispatches tweet type"
-  [{:keys [in_reply_to_status_id retweeted_status entities]}]
-  (if in_reply_to_status_id
-    :reply
-    (if retweeted_status
-      :retweet
-      (if-not (empty? (:urls entities))
-        :source-or-share
-        :unrelated))))
-
-
-(defn store-simple-reaction
-  "Store tweet as publication and reaction"
-  [uid tid type hids ts source-id]
-  (let [source-tid (:_id (mc/find-one-as-map @db "tweets" {:id source-id}))
-        source-pub-id (if source-tid
-                        (:_id (mc/find-one-as-map @db "publications" {:tweet source-tid}))
-                        nil)
-        pub-id (:_id (do (store-publication uid tid nil type hids ts)))]
-    (when source-pub-id
-      (store-reaction pub-id source-pub-id ts))))
-
-
-(defn store-raw-tweet
-  "Basic status pipeline"
+(defn store-tweet
+  "Stores tweet, parses date"
   [status]
-  (let [oid (ObjectId.)
-        doc (update-in status [:created_at] (fn [x] (f/parse custom-formatter x)))
-        {:keys [user entities retweeted_status in_reply_to_status_id created_at _id]
-         :as record} (from-db-object (mc/insert-and-return @db "tweets" (merge doc {:_id oid})) true)
-        uid (get-user-id record)
-        hids (doall (map (fn [{:keys [text]}] (get-hashtag-id text created_at)) (:hashtags entities)))
-        type (get-type record)
-        source? (news-accounts (:screen_name user))]
-    (case type
-      :retweet (do (store-simple-reaction uid _id :retweet hids created_at (:id retweeted_status)))
-      :reply (do (store-simple-reaction uid _id :reply hids created_at in_reply_to_status_id))
-      :source-or-share (let [url-ids (doall (map
-                                             #(get-url-id (:expanded_url %) uid _id created_at source?)
-                                             (:urls entities)))]
-                         (if source?
-                           (store-publication uid _id (first url-ids) :source hids created_at)
-                           (let [source-pub-id (or (doall (map #(:_id (mc/find-one-as-map @db "publications" {:url %})) url-ids)))
-                                 pub-id (:_id (store-publication uid _id nil :share hids created_at))]
-                             (when source-pub-id
-                               (store-reaction pub-id source-pub-id created_at)))))
-      :unrelated (store-publication uid _id nil :unrelated hids created_at))
-    record))
+  (let [new-status (update-in status [:created_at] (fn [x] (f/parse custom-formatter x)))]
+    (from-db-object
+     (mc/insert-and-return @db "tweets" new-status)
+     true)))
+
 
 
 ;; --- MONGO DATA EXPORT/IMPORT ---
@@ -267,12 +166,3 @@
   "Write last day's collection to specific folder"
   [database coll folder-path]
   (backup (t/minus (t/today) (t/days 1)) database coll folder-path))
-
-
-(comment
-
-  (def suids (map :_id (mc/find-maps @db "users" {:screen_name {$in news-accounts}})))
-
-  (mc/count @db "htmls" {:ts {$gt (t/date-time 2015 2 19)}})
-
-  )

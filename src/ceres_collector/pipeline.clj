@@ -12,12 +12,13 @@
             [clj-time.core :as t]
             [clj-time.coerce :as c]
             [clj-time.periodic :as p]
-            [ceres-collector.db :refer [db custom-formatter news-accounts]]
-            [ceres-collector.migrator :as d]
+            [ceres-collector.db :refer [db custom-formatter] :as d]
             [taoensso.timbre :as timbre])
   (:import org.bson.types.ObjectId))
 
 (timbre/refer-timbre)
+
+(def news-accounts #{"FAZ_NET" "dpa" "tagesschau" "SPIEGELONLINE" "SZ" "BILD" "DerWesten" "ntvde" "tazgezwitscher" "welt" "ZDFheute" "N24_de" "sternde" "focusonline"} )
 
 (defn expand-url
   "Expands shortened url strings, thanks to http://www.philippeadjiman.cod/blog/2009/09/07/the-trick-to-write-a-fast-universal-java-url-expander/"
@@ -47,7 +48,7 @@
 (defn get-author-id
   "Find user if exists, else store new user if it's not a mention"
   [{:keys [screen_name id mention] :as user}]
-  (if-let [uid (:_id (mc/find-one-as-map @db "users" {:id (:id user)}))]
+  (if-let [uid (:_id (mc/find-one-as-map @db "users" {:id id}))]
     uid
     (if-not mention
       (d/store-author user)
@@ -111,16 +112,10 @@
     (case type
       :reply (let [sid (mc/find-one-as-map @db "messages" {:tid (:in_reply_to_status_id tweet)})]
                (d/store-reference mid sid "reply"))
-      :retweet (let [sid (mc/find-one-as-map @db "messages" {:tid (-> tweet :retweeted_status :id)})]
+      :retweet (let [sid (mc/find-one-as-map @db "messages" {:tid (get-in tweet [:retweeted_status :id])})]
                  (d/store-reference mid sid "retweet"))
       :share (if news?
                nil
-               (let [sids (doall (map #(mc/find-one-as-map @db "references" {:source %}) url-ids))]
+               (let [sids (doall (map #(mc/find-one-as-map @db "refs" {:source %}) url-ids))]
                  (doall (map #(d/store-reference mid % "share") sids))))
       :unrelated (d/store-reference mid nil "unrelated"))))
-
-
-(->> {:entities.mentions {$ne nil}}
-     (mc/find-maps @db "tweets")
-     first
-     :entities)

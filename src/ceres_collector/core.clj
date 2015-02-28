@@ -1,6 +1,7 @@
 (ns ceres-collector.core
   (:gen-class :main true)
-  (:require [ceres-collector.db :refer [store-raw-tweet set-db init-mongo]]
+  (:require [ceres-collector.db :refer [set-db init-mongo]]
+            [ceres-collector.pipeline :as pipeline]
             [ceres-collector.scheduler :refer [start-scheduler]]
             [gezwitscher.core :refer [start-filter-stream gezwitscher]]
             [clojure.java.io :as io]
@@ -10,7 +11,6 @@
 (timbre/refer-timbre)
 
 (def server-state (atom nil))
-
 
 (defn initialize
   "Initialize the server state using a given config file"
@@ -33,7 +33,7 @@
       (go-loop [status (<! (:status-ch output))]
         (when status
           #_(println (:text status))
-          (store-raw-tweet status)
+          (pipeline/start status)
           (recur (<! (:status-ch output))))))
     [in out]))
 
@@ -46,7 +46,7 @@
   (when (:init? @server-state) (init-mongo))
   (info @server-state)
   (let [{{:keys [follow track credentials]} :app} @server-state]
-    (start-filter-stream follow track store-raw-tweet credentials))
+    (start-filter-stream follow track pipeline/start credentials))
   (when (:backup? @server-state)
     (start-scheduler (:backup-folder @server-state))))
 
@@ -54,9 +54,11 @@
 
   (initialize server-state "opt/test-config.edn")
 
+  @server-state
+
   (def stop-stream
     (let [{{:keys [follow track credentials]} :app} @server-state]
-      (start-filter-stream follow track store-raw-tweet credentials)))
+      (start-filter-stream follow track pipeline/start credentials)))
 
   (stop-stream)
 
