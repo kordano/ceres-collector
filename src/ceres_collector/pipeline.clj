@@ -109,7 +109,7 @@
     (d/store-reference aid mid "pub")
     (doall (map #(d/store-reference mid (assoc % :mention true) "mention") me-ids))
     (doall (map #(d/store-reference mid % "url") url-ids))
-    (doall (map #(d/store-hashtag mid % "tag") hids))
+    (doall (map #(d/store-reference mid % "tag") hids))
     (case type
       :reply (let [sid (mc/find-one-as-map @db "messages" {:tid (:in_reply_to_status_id tweet)})]
                (d/store-reference mid sid "reply"))
