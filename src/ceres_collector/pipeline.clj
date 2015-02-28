@@ -102,13 +102,14 @@
         aid (get-author-id user)
         hids (doall (map (fn [{:keys [text]}] (get-hashtag-id text)) (:hashtags entities)))
         url-ids (doall (map #(get-url-id (:expanded_url %) news?) (:urls entities)))
-        me-ids (doall (map #(get-author-id %) (:mentions entities)))
+        me-ids (doall (map #(get-author-id %) (:user_mentions entities)))
         type (get-type tweet)]
     (when news?
       (doall (map #(d/store-reference % mid "source") url-ids)))
     (d/store-reference aid mid "pub")
-    (map #(d/store-reference mid % "url") url-ids)
-    (map #(d/store-hashtag mid % "tag") hids)
+    (doall (map #(d/store-reference mid (assoc % :mention true) "mention") me-ids))
+    (doall (map #(d/store-reference mid % "url") url-ids))
+    (doall (map #(d/store-hashtag mid % "tag") hids))
     (case type
       :reply (let [sid (mc/find-one-as-map @db "messages" {:tid (:in_reply_to_status_id tweet)})]
                (d/store-reference mid sid "reply"))
