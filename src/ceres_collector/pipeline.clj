@@ -117,6 +117,6 @@
                  (d/store-reference mid sid "retweet"))
       :share (if news?
                nil
-               (let [sids (doall (map #(mc/find-one-as-map @db "refs" {:source %}) url-ids))]
+               (let [sids (doall (map #(:_id (mc/find-one-as-map @db "refs" {:source %})) url-ids))]
                  (doall (map #(d/store-reference mid % "share") sids))))
       :unrelated (d/store-reference mid nil "unrelated"))))
