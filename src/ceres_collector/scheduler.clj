@@ -87,7 +87,7 @@
 
 
 (defn refs-backup-schedule
-  "Create a schedule to backup the reactions at 3.10 am"
+  "Create a schedule to backup the refs at 3.10 am"
   [path]
   (let [job (j/build
              (j/of-type RefsBackup)
@@ -103,8 +103,6 @@
                     (starting-daily-at (time-of-day 3 10 00))
                     (ending-daily-at (time-of-day 3 10 01)))))]
     (qs/schedule job trigger)))
-
-
 
 
 
@@ -147,7 +145,7 @@
 
 
 (defn messages-backup-schedule
-  "Create a schedule to backup the mentions at 3.30 am"
+  "Create a schedule to backup the messages at 3.30 am"
   [path]
   (let [job (j/build
              (j/of-type MessagesBackup)
@@ -166,7 +164,7 @@
 
 
 (defn hashtags-backup-schedule
-  "Create a schedule to backup the mentions at 3.30 am"
+  "Create a schedule to backup the hashtags at 3.35 am"
   [path]
   (let [job (j/build
              (j/of-type HashtagsBackup)
