@@ -8,3 +8,4 @@ mongoimport --db demeter --collection tags $data/tags-$yesterday.json
 mongoimport --db demeter --collection users $data/users-$yesterday.json
 mongoimport --db demeter --collection urls $data/urls-$yesterday.json
 mongoimport --db demeter --collection htmls $data/htmls-$yesterday.json
+mongoimport --db demeter --collection messages $data/messages-$yesterday.json
