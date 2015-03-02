@@ -100,13 +100,13 @@
         news? (news-accounts (:screen_name user))
         mid (d/store-message text _id id)
         aid (get-author-id user)
+        _ (d/store-reference aid mid "pub")
         hids (doall (map (fn [{:keys [text]}] (get-hashtag-id text)) (:hashtags entities)))
         url-ids (doall (map #(get-url-id (:expanded_url %) news?) (:urls entities)))
         me-ids (doall (map #(get-author-id (assoc % :mention true)) (:user_mentions entities)))
         type (get-type tweet)]
     (when news?
       (doall (map #(d/store-reference % mid "source") url-ids)))
-    (d/store-reference aid mid "pub")
     (doall (map #(d/store-reference mid % "mention") me-ids))
     (doall (map #(d/store-reference mid % "url") url-ids))
     (doall (map #(d/store-reference mid % "tag") hids))
