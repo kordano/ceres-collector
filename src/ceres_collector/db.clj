@@ -41,6 +41,8 @@
     (mc/ensure-index @db "urls" (array-map :url 1))
     (mc/ensure-index @db "urls" (array-map :ts 1))
     (mc/ensure-index @db "refs" (array-map :source 1))
+    (mc/ensure-index @db "refs" (array-map :source 1 :type 1))
+    (mc/ensure-index @db "refs" (array-map :target 1 :type 1))
     (mc/ensure-index @db "refs" (array-map :target 1))
     (mc/ensure-index @db "refs" (array-map :type 1))
     (mc/ensure-index @db "refs" (array-map :ts 1))
