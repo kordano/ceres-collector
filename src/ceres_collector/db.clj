@@ -126,7 +126,7 @@
   (let [raw-html (if (= url :not-available) nil (slurp url))]
     (mc/insert-and-return
      @db
-     ""
+     "htmls"
      {:raw raw-html
       :ts (t/now)
       :url url-id})))
