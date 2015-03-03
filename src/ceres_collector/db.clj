@@ -23,7 +23,7 @@
   (atom
    (let [^MongoOptions opts (mg/mongo-options :threads-allowed-to-block-for-connection-multiplier 300)
          ^ServerAddress sa  (mg/server-address (or (System/getenv "DB_PORT_27017_TCP_ADDR") "127.0.0.1") 27017)]
-     (mg/get-db (mg/connect sa opts) "hera"))))
+     (mg/get-db (mg/connect sa opts) "juno"))))
 
 (def time-interval {$gt (t/date-time 2014 8 1) $lt (t/date-time 2014 9 1)})
 
@@ -126,7 +126,7 @@
   (let [raw-html (if (= url :not-available) nil (slurp url))]
     (mc/insert-and-return
      @db
-     "htmls"
+     ""
      {:raw raw-html
       :ts (t/now)
       :url url-id})))
