@@ -111,9 +111,9 @@
     (doall (map #(d/store-reference mid % "url") url-ids))
     (doall (map #(d/store-reference mid % "tag") hids))
     (case type
-      :reply (let [sid (mc/find-one-as-map @db "messages" {:tweet (:in_reply_to_status_id tweet)})]
+      :reply (let [sid (:_id (mc/find-one-as-map @db "messages" {:tweet (:in_reply_to_status_id tweet)}))]
                (d/store-reference mid sid "reply"))
-      :retweet (let [sid (mc/find-one-as-map @db "messages" {:tweet (get-in tweet [:retweeted_status :id])})]
+      :retweet (let [sid (:_id (mc/find-one-as-map @db "messages" {:tweet (get-in tweet [:retweeted_status :id])}))]
                  (d/store-reference mid sid "retweet"))
       :share (if news?
                nil
