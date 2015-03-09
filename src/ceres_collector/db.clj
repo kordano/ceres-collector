@@ -74,6 +74,93 @@
     :type type
     :ts (t/now)}))
 
+(defn store-pub
+  "Store reference between agent and message "
+  [source target type]
+  (mc/insert-and-return
+   @db
+   "pubs"
+   {:source source
+    :target target
+    :ts (t/now)}))
+
+
+(defn store-mention
+  "Store reference between message and agent "
+  [source target type]
+  (mc/insert-and-return
+   @db
+   "mentions"
+   {:source source
+    :target target
+    :ts (t/now)}))
+
+
+(defn store-retweet
+  "Store retweet reference between message and message "
+  [source target type]
+  (mc/insert-and-return
+   @db
+   "retweet"
+   {:source source
+    :target target
+    :ts (t/now)}))
+
+
+(defn store-reply
+  "Store reply reference between message and message "
+  [source target type]
+  (mc/insert-and-return
+   @db
+   "replies"
+   {:source source
+    :target target
+    :ts (t/now)}))
+
+
+(defn store-urlref
+  "Store reference between message and url "
+  [source target type]
+  (mc/insert-and-return
+   @db
+   "urlrefs"
+   {:source source
+    :target target
+    :ts (t/now)}))
+
+
+(defn store-tagref
+  "Store reference between message and tag"
+  [source target type]
+  (mc/insert-and-return
+   @db
+   "tagrefs"
+   {:source source
+    :target target
+    :ts (t/now)}))
+
+
+(defn store-share
+  "Store share reference between message and message "
+  [source target type]
+  (mc/insert-and-return
+   @db
+   "shares"
+   {:source source
+    :target target
+    :ts (t/now)}))
+
+
+(defn store-source
+  "Store reference between url and message "
+  [source target type]
+  (mc/insert-and-return
+   @db
+   "sources"
+   {:source source
+    :target target
+    :ts (t/now)}))
+
 
 (defn store-hashtag [text]
   (-> (mc/insert-and-return
@@ -142,6 +229,9 @@
 
 
 
+()
+
+
 ;; --- MONGO DATA EXPORT/IMPORT ---
 (defn backup
   "Write backup from given date of a specific collection to a given folder"
@@ -168,3 +258,10 @@
   "Write last day's collection to specific folder"
   [database coll folder-path]
   (backup (t/minus (t/today) (t/days 1)) database coll folder-path))
+
+
+(comment
+
+  (init-mongo)
+
+  )
