@@ -246,10 +246,6 @@
      true)))
 
 
-
-()
-
-
 ;; --- MONGO DATA EXPORT/IMPORT ---
 (defn backup
   "Write backup from given date of a specific collection to a given folder"
