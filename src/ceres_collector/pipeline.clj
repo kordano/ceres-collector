@@ -100,23 +100,23 @@
         news? (news-accounts (:screen_name user))
         mid (d/store-message text _id id)
         aid (get-author-id user)
-        _ (d/store-reference aid mid "pub")
+        _ (d/store-pub aid mid)
         hids (doall (map (fn [{:keys [text]}] (get-hashtag-id text)) (:hashtags entities)))
         url-ids (doall (map #(get-url-id (:expanded_url %) news?) (:urls entities)))
         me-ids (doall (map #(get-author-id (assoc % :mention true)) (:user_mentions entities)))
         type (get-type tweet)]
     (when news?
-      (doall (map #(d/store-reference % mid "source") url-ids)))
-    (doall (map #(d/store-reference mid % "mention") me-ids))
-    (doall (map #(d/store-reference mid % "url") url-ids))
-    (doall (map #(d/store-reference mid % "tag") hids))
+      (doall (map #(d/store-source % mid) url-ids)))
+    (doall (map #(d/store-mention mid %) me-ids))
+    (doall (map #(d/store-urlref mid %) url-ids))
+    (doall (map #(d/store-tagref mid %) hids))
     (case type
       :reply (let [sid (:_id (mc/find-one-as-map @db "messages" {:tweet (:in_reply_to_status_id tweet)}))]
-               (d/store-reference mid sid "reply"))
+               (d/store-reply mid sid))
       :retweet (let [sid (:_id (mc/find-one-as-map @db "messages" {:tweet (get-in tweet [:retweeted_status :id])}))]
-                 (d/store-reference mid sid "retweet"))
+                 (d/store-retweet mid sid))
       :share (if news?
                nil
                (let [sids (doall (map #(:_id (mc/find-one-as-map @db "refs" {:source %})) url-ids))]
-                 (doall (map #(d/store-reference mid % "share") sids))))
-      :unrelated (d/store-reference mid nil "unrelated"))))
+                 (doall (map #(d/store-share mid %) sids))))
+      :unrelated (d/store-unknown mid))))

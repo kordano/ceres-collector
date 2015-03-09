@@ -62,21 +62,18 @@
     (mc/ensure-index @db "tweets" (array-map :in_reply_to_status_id 1))
     (mc/ensure-index @db "tweets" (array-map :created_at 1))))
 
-
-(defn store-reference
-  "Store reference between tweet and another entity"
-  [source target type]
+(defn store-unknown
+  "Store unknown reference"
+  [source]
   (mc/insert-and-return
    @db
-   "refs"
+   "unknown"
    {:source source
-    :target target
-    :type type
     :ts (t/now)}))
 
 (defn store-pub
   "Store reference between agent and message "
-  [source target type]
+  [source target]
   (mc/insert-and-return
    @db
    "pubs"
@@ -87,7 +84,7 @@
 
 (defn store-mention
   "Store reference between message and agent "
-  [source target type]
+  [source target]
   (mc/insert-and-return
    @db
    "mentions"
@@ -98,7 +95,7 @@
 
 (defn store-retweet
   "Store retweet reference between message and message "
-  [source target type]
+  [source target]
   (mc/insert-and-return
    @db
    "retweet"
@@ -109,7 +106,7 @@
 
 (defn store-reply
   "Store reply reference between message and message "
-  [source target type]
+  [source target]
   (mc/insert-and-return
    @db
    "replies"
@@ -120,7 +117,7 @@
 
 (defn store-urlref
   "Store reference between message and url "
-  [source target type]
+  [source target]
   (mc/insert-and-return
    @db
    "urlrefs"
@@ -131,7 +128,7 @@
 
 (defn store-tagref
   "Store reference between message and tag"
-  [source target type]
+  [source target]
   (mc/insert-and-return
    @db
    "tagrefs"
@@ -142,7 +139,7 @@
 
 (defn store-share
   "Store share reference between message and message "
-  [source target type]
+  [source target]
   (mc/insert-and-return
    @db
    "shares"
@@ -153,7 +150,7 @@
 
 (defn store-source
   "Store reference between url and message "
-  [source target type]
+  [source target]
   (mc/insert-and-return
    @db
    "sources"
