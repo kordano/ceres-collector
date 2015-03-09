@@ -40,12 +40,33 @@
   (do
     (mc/ensure-index @db "urls" (array-map :url 1))
     (mc/ensure-index @db "urls" (array-map :ts 1))
-    (mc/ensure-index @db "refs" (array-map :source 1))
-    (mc/ensure-index @db "refs" (array-map :source 1 :type 1))
-    (mc/ensure-index @db "refs" (array-map :target 1 :type 1))
-    (mc/ensure-index @db "refs" (array-map :target 1))
-    (mc/ensure-index @db "refs" (array-map :type 1))
-    (mc/ensure-index @db "refs" (array-map :ts 1))
+    (mc/ensure-index @db "mentions" (array-map :source 1))
+    (mc/ensure-index @db "mentions" (array-map :target 1))
+    (mc/ensure-index @db "mentions" (array-map :ts 1))
+    (mc/ensure-index @db "sources" (array-map :source 1))
+    (mc/ensure-index @db "sources" (array-map :target 1))
+    (mc/ensure-index @db "sources" (array-map :ts 1))
+    (mc/ensure-index @db "replies" (array-map :source 1))
+    (mc/ensure-index @db "replies" (array-map :target 1))
+    (mc/ensure-index @db "replies" (array-map :ts 1))
+    (mc/ensure-index @db "retweets" (array-map :source 1))
+    (mc/ensure-index @db "retweets" (array-map :target 1))
+    (mc/ensure-index @db "retweets" (array-map :ts 1))
+    (mc/ensure-index @db "pubs" (array-map :source 1))
+    (mc/ensure-index @db "pubs" (array-map :target 1))
+    (mc/ensure-index @db "pubs" (array-map :ts 1))
+    (mc/ensure-index @db "shares" (array-map :source 1))
+    (mc/ensure-index @db "shares" (array-map :target 1))
+    (mc/ensure-index @db "shares" (array-map :ts 1))
+    (mc/ensure-index @db "urlrefs" (array-map :source 1))
+    (mc/ensure-index @db "urlrefs" (array-map :target 1))
+    (mc/ensure-index @db "urlrefs" (array-map :ts 1))
+    (mc/ensure-index @db "tagrefs" (array-map :source 1))
+    (mc/ensure-index @db "tagrefs" (array-map :target 1))
+    (mc/ensure-index @db "tagrefs" (array-map :ts 1))
+    (mc/ensure-index @db "unknown" (array-map :source 1))
+    (mc/ensure-index @db "unknown" (array-map :target 1))
+    (mc/ensure-index @db "unknown" (array-map :ts 1))
     (mc/ensure-index @db "tags" (array-map :text 1))
     (mc/ensure-index @db "tags" (array-map :ts 1))
     (mc/ensure-index @db "messages" (array-map :ts 1))
@@ -255,10 +276,3 @@
   "Write last day's collection to specific folder"
   [database coll folder-path]
   (backup (t/minus (t/today) (t/days 1)) database coll folder-path))
-
-
-(comment
-
-  (init-mongo)
-
-  )
