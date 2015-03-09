@@ -44,6 +44,7 @@
               ["Users" (create-backup-job "Users")]
               ["Htmls" (create-backup-job "Htmls")]
               ["Urls" (create-backup-job "Urls")]
+              ["Refs" (create-backup-job "Refs")]
               ["Tags" (create-backup-job "Tags")]
               ["Mentions" (create-backup-job "Mentions")]
               ["Sources" (create-backup-job "Sources")]
