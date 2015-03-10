@@ -53,7 +53,9 @@
               ["Shares" (create-backup-job "Shares")]
               ["Urlrefs" (create-backup-job "Urlrefs")]
               ["Tagrefs" (create-backup-job "Tagrefs")]
-              ["Unknown" (create-backup-job "Unknown")]] ]
+              ["Unknown" (create-backup-job "Unknown")]]]
+    jobs
     (qs/initialize)
     (qs/start)
-    (map  #(backup-schedule (first (get jobs %)) path % (second (get jobs %))) (range (count jobs)))))
+    (doall
+     (map #(backup-schedule (first (get jobs %)) path % (second (get jobs %))) (range (count jobs))))))
