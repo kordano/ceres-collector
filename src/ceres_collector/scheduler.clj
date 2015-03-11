@@ -50,6 +50,7 @@
               ["Mentions" (create-backup-job "Mentions")]
               ["Sources" (create-backup-job "Sources")]
               ["Retweets" (create-backup-job "Retweets")]
+              ["Replies" (create-backup-job "Replies")]
               ["Pubs" (create-backup-job "Pubs")]
               ["Shares" (create-backup-job "Shares")]
               ["Urlrefs" (create-backup-job "Urlrefs")]
