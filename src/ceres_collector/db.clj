@@ -119,7 +119,7 @@
   [source target]
   (mc/insert-and-return
    @db
-   "retweet"
+   "retweets"
    {:source source
     :target target
     :ts (t/now)}))
