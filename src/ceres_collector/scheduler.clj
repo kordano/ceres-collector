@@ -46,6 +46,7 @@
               ["Urls" (create-backup-job "Urls")]
               ["Refs" (create-backup-job "Refs")]
               ["Tags" (create-backup-job "Tags")]
+              ["Messages" (create-backup-job "Messages")]
               ["Mentions" (create-backup-job "Mentions")]
               ["Sources" (create-backup-job "Sources")]
               ["Retweets" (create-backup-job "Retweets")]
