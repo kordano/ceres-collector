@@ -3,6 +3,8 @@
   (:require [ceres-collector.db :refer [set-db init-mongo]]
             [ceres-collector.pipeline :as pipeline]
             [ceres-collector.scheduler :refer [start-scheduler]]
+            [ceres-collector.processor :as proc]
+            [ceres-collector.mongo :as mongo]
             [gezwitscher.core :refer [start-filter-stream gezwitscher]]
             [clojure.java.io :as io]
             [clojure.core.async :refer [close! put! timeout sub chan <!! >!! <! >! go go-loop] :as async]
@@ -50,11 +52,11 @@
     (start-filter-stream
      follow
      track
-     #_(fn [status]
+     (fn [status]
        (do
          (debug "STATUS - " (str "@" (get-in status [:user :screen_name])) ":"  (:text status))
          (pipeline/start status)))
-     pipeline/start
+     #_pipeline/start
      credentials))
   (when (:backup? @server-state)
     (start-scheduler (:backup-folder @server-state))))
@@ -76,6 +78,22 @@
 
   (stop-stream)
 
-  (def g (start-stream server-state))
 
-  (>!! (first g) {:topic :stop-stream}))
+  (def db (mongo/init :name "jupiter"))
+
+
+  db
+
+  (def stop-stream
+    (let [{{:keys [follow track credentials]} :app} @server-state]
+      (start-filter-stream
+       follow
+       track
+       (fn [status]
+         (do
+           (debug "STATUS - " (str "@" (get-in status [:user :screen_name])) ":"  (:text status))
+           (proc/process db status))) credentials)))
+
+  (stop-stream)
+
+  )
