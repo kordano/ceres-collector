@@ -48,15 +48,12 @@
   (timbre/set-config! [:shared-appender-config :spit-filename] (:logfile @server-state))
   (info "Starting twitter collector...")
   (when (:init? @server-state) (init-mongo))
-  (let [{{:keys [follow track credentials]} :app} @server-state]
+  (let [{{:keys [follow track credentials]} :app} @server-state
+        db (mongo/init :name "juno")]
     (start-filter-stream
      follow
      track
-     (fn [status]
-       (do
-         (debug "STATUS - " (str "@" (get-in status [:user :screen_name])) ":"  (:text status))
-         (pipeline/start status)))
-     #_pipeline/start
+     (fn [status] (proc/process db status))
      credentials))
   (when (:backup? @server-state)
     (start-scheduler (:backup-folder @server-state))))
@@ -65,24 +62,6 @@
 (comment
 
   (initialize server-state "opt/test-config.edn")
-
-  (def stop-stream
-    (let [{{:keys [follow track credentials]} :app} @server-state]
-      (start-filter-stream
-       follow
-       track
-       (fn [status]
-         (do
-           (debug "STATUS - " (str "@" (get-in status [:user :screen_name])) ":"  (:text status))
-           (pipeline/start status))) credentials)))
-
-  (stop-stream)
-
-
-  (def db (mongo/init :name "jupiter"))
-
-
-  db
 
   (def stop-stream
     (let [{{:keys [follow track credentials]} :app} @server-state]

@@ -114,6 +114,7 @@
 (comment
 
 
+  (def db (:db (init :name "jupiter")))
 
 
   )
