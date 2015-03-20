@@ -4,6 +4,7 @@
             [ceres-collector.pipeline :as pipeline]
             [ceres-collector.scheduler :refer [start-scheduler]]
             [ceres-collector.processor :as proc]
+            [ceres-collector.geschichte :as geschichte]
             [ceres-collector.mongo :as mongo]
             [gezwitscher.core :refer [start-filter-stream gezwitscher]]
             [clojure.java.io :as io]
@@ -25,6 +26,7 @@
          (assoc-in [:app :recent-tweets] [])
          (assoc-in [:app :recent-articles] [])))
     (set-db (-> @state :app :db))
+    (swap! state assoc :geschichte (geschichte/init :user "kordano@topiq.es" :repo "tweet collection"))
     (debug @state)))
 
 
@@ -62,6 +64,17 @@
 (comment
 
   (initialize server-state "opt/test-config.edn")
+
+   (def geschichte-stream
+    (let [{{:keys [follow track credentials]} :app} @server-state]
+      (start-filter-stream
+       follow
+       track
+       (fn [status]
+         (geschichte/transact-status server-state status)) credentials)))
+
+  (geschichte-stream)
+
 
   (def stop-stream
     (let [{{:keys [follow track credentials]} :app} @server-state]
