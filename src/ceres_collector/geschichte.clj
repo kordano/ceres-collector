@@ -16,9 +16,6 @@
 (timbre/refer-timbre)
 
 
-(def mem-atom (atom {:repo "local"
-                     :data []}))
-
 (def eval-map
   {'(fn init [_ name]
       (atom {:store name
