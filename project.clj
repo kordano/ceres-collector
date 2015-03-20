@@ -16,6 +16,10 @@
                  [gezwitscher "0.1.1-SNAPSHOT"]
                  [com.novemberain/monger "2.0.0-rc1"]
                  [clojurewerkz/quartzite "1.3.0"]
+
+                 [net.polyc0l0r/konserve "0.2.3"]
+                 [net.polyc0l0r/geschichte "0.1.0-SNAPSHOT"]
+
                  [aprint "0.1.0"]
                  [com.taoensso/timbre "3.2.1"]]
 
