@@ -75,12 +75,16 @@
     (<!? (s/commit! stage {user {repo #{"master"}}}))
    state))
 
+
 (defn get-current-state
   "Realize head of current geschichte master branch"
   [state]
-  (let [{:keys [store peer stage repo user]} (get-in @state :geschichte)]
-    (<!? (commit-value store mapped-eval (get-in @stage [user repo :state :causal-order])    (first (get-in @stage [user repo :state :branches "master"]))))
+  (let [{:keys [store peer stage repo user]} (get-in @state :geschichte)
+        causal-order (get-in @stage [user repo :state :causal-order])
+        master-head (first (get-in @stage [user repo :state :branches "master"]))]
+    (<!? (commit-value store mapped-eval causal-order master-head))
     state))
+
 
 (comment
 

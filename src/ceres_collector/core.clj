@@ -75,6 +75,9 @@
 
   (geschichte-stream)
 
+  (geschichte/)
+
+
 
   (def stop-stream
     (let [{{:keys [follow track credentials]} :app} @server-state]
