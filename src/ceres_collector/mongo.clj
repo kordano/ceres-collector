@@ -4,10 +4,10 @@
             [clj-time.coerce :as c]
             [clojure.java.shell :refer [sh]]
             [monger.core :as mg]
+            [monger.collection :as mc]
             [monger.operators :refer :all]
             [monger.conversion :refer [from-db-object]]
-            [taoensso.timbre :as timbre]
-            [monger.collection :as mc])
+            [taoensso.timbre :as timbre])
   (:import [ceres_collector.polymorph DbEntry DbQuery]
            [com.mongodb MongoOptions ServerAddress]))
 
@@ -107,11 +107,18 @@
   (when-not opts
     (info "MongoDB - using default configuration"))
   (let [^MongoOptions opts (mg/mongo-options :threads-allowed-to-block-for-connection-multiplier 300) ;; TODO: better options handling
-        ^ServerAddress sa  (mg/server-address (or server-address  (System/getenv "DB_PORT_27017_TCP_ADDR") "127.0.0.1") 27017)
+        ^ServerAddress sa  (mg/server-address (or server-address (System/getenv "DB_PORT_27017_TCP_ADDR") "127.0.0.1") 27017)
         name (or name "juno")
         db (mg/get-db (mg/connect sa opts) name)]
     (info "MongoDB - connected! ")
     (MongoDB. db name opts sa)))
+
+
+(defn init-log-db [name]
+  (let [db (mg/get-db (mg/connect) name)]
+    (info "MongoDB - " name " connected!")
+    db))
+
 
 ;; --- MONGO DATA EXPORT/IMPORT ---
 (defn backup
@@ -145,6 +152,13 @@
 
   (def db (init :name "juno"))
 
-  (mc/count @db )
+  (def log-db (init-log-db "saturn"))
+
+  (mc/count log-db "ctimes")
+
+  (let [ctimes (->> (mc/find-maps log-db "ctimes")
+              rest
+              (map :time))]
+    (reduce (comp float +) (map #(/ % (count ctimes)) ctimes)))
 
   )

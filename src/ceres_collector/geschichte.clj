@@ -9,6 +9,7 @@
             [geschichte.realize :refer [commit-value]]
             [geschichte.p2p.block-detector :refer [block-detector]]
             [geschichte.platform :refer [create-http-kit-handler! <!? start stop]]
+            [monger.collection :as mc]
             [clojure.core.async :refer [>!!]]
             [aprint.core :refer [aprint]]
             [taoensso.timbre :as timbre]))
@@ -68,11 +69,12 @@
 (defn transact-status
   "Transact incoming status to geschichte and commit"
   [state status]
-  (let [{:keys [store peer stage repo user]} (get-in @state [:geschichte])]
-    (<!? (s/transact stage [user repo "master"]
-                     [[(find-fn 'transact-entry)
-                       [status]]]))
-    (<!? (s/commit! stage {user {repo #{"master"}}}))
+  (let [{:keys [store peer stage repo user]} (get-in @state [:geschichte])
+        db (get-in @state [:log-db])]
+    (<!? (s/transact stage [user repo "master"] [[(find-fn 'transact-entry) [status]]]))
+    (let [pre-time (System/currentTimeMillis)]
+      (<!? (s/commit! stage {user {repo #{"master"}}}))
+      (mc/insert db "ctimes" {:time (- (System/currentTimeMillis) pre-time)}))
    state))
 
 

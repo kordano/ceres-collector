@@ -16,9 +16,13 @@
 (defn initialize
   "Initialize the server state using a given config file"
   [state path]
-  (do (reset! state (-> path slurp read-string))
-      (swap! state assoc :geschichte (geschichte/init :user "kordano@topiq.es" :repo "tweet collection"))
-      (debug @state)))
+  (reset!
+   state
+   (-> path
+       slurp
+       read-string
+       (assoc :geschichte (geschichte/init :user "kordano@topiq.es" :repo "tweet collection"))
+       (assoc :log-db (mongo/init-log-db "saturn")))))
 
 
 (defn -main [config-path & args]
@@ -57,10 +61,10 @@
   (aprint.core/aprint (get-in @server-state [:geschichte :repo]))
 
   (-> (geschichte/get-current-state server-state)
-      deref
       (get-in [:data])
       count
       time)
+
 
   (def stop-stream
     (let [{{:keys [follow track credentials]} :app} @server-state
