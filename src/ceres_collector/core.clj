@@ -70,13 +70,18 @@
       (start-filter-stream
        follow
        track
-       (fn [status]
-         (geschichte/transact-status server-state status)) credentials)))
+       (fn [status] (geschichte/transact-status server-state status))
+       credentials)))
 
-  (geschichte-stream)
 
-  (geschichte/)
+   (do
+     (geschichte-stream)
+     (geschichte/stop-peer server-state))
 
+   (-> (geschichte/get-current-state server-state)
+       deref
+       (get-in [:data])
+       count)
 
 
   (def stop-stream
