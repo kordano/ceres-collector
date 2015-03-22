@@ -1,8 +1,9 @@
 (ns ceres-collector.mongo
   (:require [ceres-collector.polymorph :refer [Database transact]]
             [clj-time.core :as t]
+            [clj-time.coerce :as c]
+            [clojure.java.shell :refer [sh]]
             [monger.core :as mg]
-            [monger.operators :refer :all]
             [monger.conversion :refer [from-db-object]]
             [taoensso.timbre :as timbre]
             [monger.collection :as mc])
@@ -110,3 +111,30 @@
         db (mg/get-db (mg/connect sa opts) name)]
     (info "MongoDB - connected! ")
     (MongoDB. db name opts sa)))
+
+;; --- MONGO DATA EXPORT/IMPORT ---
+(defn backup
+  "Write backup from given date of a specific collection to a given folder"
+  [date database coll folder-path]
+  (let [day-after (t/plus date (t/days 1))
+        m (str (t/month date))
+        d (str (t/day date))
+        file-path (str folder-path
+                       "/" coll
+                       "-" (t/year date)
+                       "-" (if (< (count m) 2) (str 0 m) m)
+                       "-" (if (< (count d) 2) (str 0 d) d)
+                       ".json")]
+    (sh "mongoexport"
+        "--port" "27017"
+        "--host" (or (System/getenv "DB_PORT_27017_TCP_ADDR") "127.0.0.1")
+        "--db" database
+        "--collection" coll
+        "--query" (str "{" (if (= coll "tweets") "created_at" "ts") " : {$gte : new Date(" (c/to-long date) "), $lt : new Date(" (c/to-long day-after) ")}}")
+        "--out" file-path)))
+
+
+(defn backup-yesterday
+  "Write last day's collection to specific folder"
+  [database coll folder-path]
+  (backup (t/minus (t/today) (t/days 1)) database coll folder-path))

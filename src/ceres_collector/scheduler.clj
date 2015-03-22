@@ -5,7 +5,7 @@
             [clojurewerkz.quartzite.conversion :as qc]
             [clojurewerkz.quartzite.jobs :refer [defjob]]
             [clojurewerkz.quartzite.schedule.daily-interval :refer [schedule time-of-day every-day starting-daily-at ending-daily-at]]
-            [ceres-collector.db :as db]
+            [ceres-collector.mongo :as mongo]
             [taoensso.timbre :as timbre]))
 
 (timbre/refer-timbre)
@@ -16,7 +16,7 @@
   `(defjob ~(symbol (str coll "Backup")) [ctx#]
      (info "- BACKUP -" ~coll)
      (let [path# (get (qc/from-job-data ctx#) "folder-path")]
-       (db/backup-yesterday "juno" ~(clojure.string/lower-case coll) path#))))
+       (mongo/backup-yesterday "juno" ~(clojure.string/lower-case coll) path#))))
 
 (defn backup-schedule
   "Create schedule for a given collection, storing path, collection offset and job type."
@@ -37,7 +37,7 @@
      (qs/schedule job trigger)))
 
 
-(defn start-scheduler
+(defn start
   "Run the schedules"
   [path]
   (let [jobs [["Tweets" (create-backup-job "Tweets")]
