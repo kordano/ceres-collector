@@ -15,7 +15,7 @@
 
 (timbre/refer-timbre)
 
-(defn stop-peer [state]
+#_(defn stop-peer [state]
   (stop (get-in @state [:geschichte :peer])))
 
 (def eval-map
