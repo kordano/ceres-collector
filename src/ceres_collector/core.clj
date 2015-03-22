@@ -53,11 +53,14 @@
     (geschichte-stream)
     (geschichte/stop-peer server-state))
 
+
+  (aprint.core/aprint (get-in @server-state [:geschichte :repo]))
+
   (-> (geschichte/get-current-state server-state)
       deref
       (get-in [:data])
-      count)
-
+      count
+      time)
 
   (def stop-stream
     (let [{{:keys [follow track credentials]} :app} @server-state

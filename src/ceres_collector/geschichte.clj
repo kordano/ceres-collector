@@ -20,17 +20,15 @@
 
 (def eval-map
   {'(fn init [_ name]
-      (atom {:store name
-             :data []}))
+      {:store name
+       :data []})
    (fn [_ name]
-     (atom {:store name
-             :data []}))
+     {:store name
+      :data []})
    '(fn transact-entry [old entry]
-      (swap! old #(update-in % [:data] concat entry))
-      old)
+      (update-in old [:data] concat entry))
    (fn [old entry]
-     (swap! old #(update-in % [:data] concat entry))
-     old)})
+     (update-in old [:data] concat entry))})
 
 
 (defn mapped-eval [code]
@@ -85,3 +83,36 @@
         causal-order (get-in @stage [user repo :state :causal-order])
         master-head (first (get-in @stage [user repo :state :branches "master"]))]
     (<!? (commit-value store mapped-eval causal-order master-head))))
+
+
+(comment
+
+  (def store (<!? (new-mem-store)))
+
+  (def peer (client-peer "archimedes" store (comp (partial fetch store) ensure-hash)))
+
+  (def stage (<!? (s/create-stage! "kordano@topiq.es" peer eval)))
+
+  (<!? (s/connect! stage "ws://127.0.0.1:31744"))
+
+
+  (def user "kordano@topiq.es")
+
+  (def repo #uuid "8496c36e-6935-4074-9b5a-7c9fa4902ebd")
+
+
+  (<!? (s/subscribe-repos! stage {user {repo #{"master"}}}))
+
+  (let [causal-order (get-in @stage [user repo :state :causal-order])
+        master-head (first (get-in @stage [user repo :state :branches "master"]))]
+    (-> (<!? (commit-value store mapped-eval causal-order master-head))
+        deref
+        (get-in [:data])
+        count))
+
+
+  (use 'clojure.stacktrace)
+
+  (-> (root-cause *e) (print-cause-trace 25))
+
+  )

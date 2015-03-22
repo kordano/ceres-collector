@@ -4,10 +4,12 @@
             [clj-time.coerce :as c]
             [clojure.java.shell :refer [sh]]
             [monger.core :as mg]
+            [monger.operators :refer :all]
             [monger.conversion :refer [from-db-object]]
             [taoensso.timbre :as timbre]
             [monger.collection :as mc])
-  (:import [ceres_collector.polymorph DbEntry DbQuery]))
+  (:import [ceres_collector.polymorph DbEntry DbQuery]
+           [com.mongodb MongoOptions ServerAddress]))
 
 
 (timbre/refer-timbre)
@@ -104,8 +106,7 @@
   (info "MongoDB - creating connection ...")
   (when-not opts
     (info "MongoDB - using default configuration"))
-  (let [
-        ^MongoOptions opts (mg/mongo-options :threads-allowed-to-block-for-connection-multiplier 300) ;; TODO: better options handling
+  (let [^MongoOptions opts (mg/mongo-options :threads-allowed-to-block-for-connection-multiplier 300) ;; TODO: better options handling
         ^ServerAddress sa  (mg/server-address (or server-address  (System/getenv "DB_PORT_27017_TCP_ADDR") "127.0.0.1") 27017)
         name (or name "juno")
         db (mg/get-db (mg/connect sa opts) name)]
@@ -138,3 +139,12 @@
   "Write last day's collection to specific folder"
   [database coll folder-path]
   (backup (t/minus (t/today) (t/days 1)) database coll folder-path))
+
+
+(comment
+
+  (def db (init :name "juno"))
+
+  (mc/count @db )
+
+  )
