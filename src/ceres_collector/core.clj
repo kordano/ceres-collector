@@ -38,7 +38,6 @@
     (let [output (<!! out)]
       (go-loop [status (<! (:status-ch output))]
         (when status
-          #_(println (:text status))
           (pipeline/start status)
           (recur (<! (:status-ch output))))))
     [in out]))
