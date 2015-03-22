@@ -108,5 +108,5 @@
         ^ServerAddress sa  (mg/server-address (or server-address  (System/getenv "DB_PORT_27017_TCP_ADDR") "127.0.0.1") 27017)
         name (or name "juno")
         db (mg/get-db (mg/connect sa opts) name)]
-    (info "MongoDb - connected! ")
+    (info "MongoDB - connected! ")
     (MongoDB. db name opts sa)))
