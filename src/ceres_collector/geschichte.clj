@@ -2,13 +2,13 @@
   (:require [hasch.core :refer [uuid]]
             [konserve.store :refer [new-mem-store]]
             [konserve.protocols :refer [-get-in -assoc-in]]
-            [geschichte.sync :refer [server-peer client-peer]]
-            [geschichte.stage :as s]
-            [geschichte.p2p.fetch :refer [fetch]]
-            [geschichte.p2p.hash :refer [ensure-hash]]
-            [geschichte.realize :refer [commit-value]]
-            [geschichte.p2p.block-detector :refer [block-detector]]
-            [geschichte.platform :refer [create-http-kit-handler! <!? start stop]]
+            #_[geschichte.sync :refer [server-peer client-peer]]
+            #_[geschichte.stage :as s]
+            #_[geschichte.p2p.fetch :refer [fetch]]
+            #_[geschichte.p2p.hash :refer [ensure-hash]]
+            #_[geschichte.realize :refer [commit-value]]
+            #_[geschichte.p2p.block-detector :refer [block-detector]]
+            #_[geschichte.platform :refer [create-http-kit-handler! <!? start stop]]
             [clojure.core.async :refer [>!!]]
             [aprint.core :refer [aprint]]
             [taoensso.timbre :as timbre]))
@@ -44,7 +44,7 @@
                    (= name fn-name))
                  (keys eval-map))))
 
-(defn init [ & {:keys [user socket repo-name]}]
+#_(defn init [ & {:keys [user socket repo-name]}]
   (let [user (or user "kordano@topiq.es")
         socket (or socket "ws://127.0.0.1:31744")
         store (<!? (new-mem-store))
@@ -67,7 +67,7 @@
      :user user}))
 
 
-(defn transact-status
+#_(defn transact-status
   "Transact incoming status to geschichte and commit"
   [state status]
   (let [{:keys [store peer stage repo user]} (get-in @state [:geschichte])]
@@ -78,7 +78,7 @@
    state))
 
 
-(defn get-current-state
+#_(defn get-current-state
   "Realize head of current geschichte master branch"
   [state]
   (let [{:keys [store peer stage repo user]} (get-in @state [:geschichte])
