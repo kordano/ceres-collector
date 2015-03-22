@@ -82,7 +82,6 @@
 
 
 (defn store [db db-entry]
-  (debug (:value db-entry))
   (mc/insert-and-return db (type->coll (:type db-entry)) (:value db-entry)))
 
 
