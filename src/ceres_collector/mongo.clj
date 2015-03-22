@@ -2,6 +2,7 @@
   (:require [ceres-collector.polymorph :refer [Database transact]]
             [clj-time.core :as t]
             [monger.core :as mg]
+            [monger.operators :refer :all]
             [monger.conversion :refer [from-db-object]]
             [taoensso.timbre :as timbre]
             [monger.collection :as mc])
@@ -81,7 +82,8 @@
 
 
 (defn store [db db-entry]
-  (mc/insert-and-return db (type->coll (:type db-entry)) (:data db-entry)))
+  (debug (:value db-entry))
+  (mc/insert-and-return db (type->coll (:type db-entry)) (:value db-entry)))
 
 
 (defn find-id [db query]
@@ -109,12 +111,3 @@
         db (mg/get-db (mg/connect sa opts) name)]
     (info "MongoDb - connected! ")
     (MongoDB. db name opts sa)))
-
-
-(comment
-
-
-  (def db (:db (init :name "jupiter")))
-
-
-  )

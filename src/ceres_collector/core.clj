@@ -65,7 +65,7 @@
 
   (initialize server-state "opt/test-config.edn")
 
-   (def geschichte-stream
+  (def geschichte-stream
     (let [{{:keys [follow track credentials]} :app} @server-state]
       (start-filter-stream
        follow
@@ -74,25 +74,31 @@
        credentials)))
 
 
-   (do
-     (geschichte-stream)
-     (geschichte/stop-peer server-state))
+  (do
+    (geschichte-stream)
+    (geschichte/stop-peer server-state))
 
-   (-> (geschichte/get-current-state server-state)
-       deref
-       (get-in [:data])
-       count)
+  (-> (geschichte/get-current-state server-state)
+      deref
+      (get-in [:data])
+      last
+      :text
+      )
 
 
   (def stop-stream
-    (let [{{:keys [follow track credentials]} :app} @server-state]
+    (let [{{:keys [follow track credentials]} :app} @server-state
+          db (mongo/init :name "juno")]
+      (debug @server-state)
+      (debug db)
       (start-filter-stream
        follow
        track
        (fn [status]
-         (do
-           (debug "STATUS - " (str "@" (get-in status [:user :screen_name])) ":"  (:text status))
-           (proc/process db status))) credentials)))
+         (debug "STATUS - " (str "@" (get-in status [:user :screen_name])) ":"  (:text status))
+         (proc/process db status))
+       credentials)))
+
 
   (stop-stream)
 
