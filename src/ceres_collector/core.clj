@@ -26,7 +26,7 @@
          (assoc-in [:app :recent-tweets] [])
          (assoc-in [:app :recent-articles] [])))
     (set-db (-> @state :app :db))
-    (swap! state assoc :geschichte (geschichte/init :user "kordano@topiq.es" :repo "tweet collection"))
+    #_(swap! state assoc :geschichte (geschichte/init :user "kordano@topiq.es" :repo "tweet collection"))
     (debug @state)))
 
 

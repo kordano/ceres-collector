@@ -84,5 +84,4 @@
   (let [{:keys [store peer stage repo user]} (get-in @state [:geschichte])
         causal-order (get-in @stage [user repo :state :causal-order])
         master-head (first (get-in @stage [user repo :state :branches "master"]))]
-    (<!? (commit-value store mapped-eval causal-order master-head))
-    ))
+    (<!? (commit-value store mapped-eval causal-order master-head))))
