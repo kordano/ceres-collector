@@ -7,6 +7,7 @@
             [monger.collection :as mc]
             [monger.operators :refer :all]
             [monger.conversion :refer [from-db-object]]
+            [monger.joda-time]
             [taoensso.timbre :as timbre])
   (:import [ceres_collector.polymorph DbEntry DbQuery]
            [com.mongodb MongoOptions ServerAddress]))
@@ -85,7 +86,7 @@
 
 
 (defn store [db db-entry]
-  (mc/insert-and-return db (type->coll (:type db-entry)) (:value db-entry)))
+  (mc/insert-and-return db (type->coll (:type db-entry)) (assoc (:value db-entry) :ts (t/now))))
 
 
 (defn find-id [db query]
@@ -157,7 +158,6 @@
   (mc/count log-db "ctimes")
 
   (let [ctimes (->> (mc/find-maps log-db "ctimes")
-              rest
               (map :time))]
     (reduce (comp float +) (map #(/ % (count ctimes)) ctimes)))
 

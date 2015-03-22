@@ -1,6 +1,8 @@
 (ns ceres-collector.geschichte
   (:require [hasch.core :refer [uuid]]
             [konserve.store :refer [new-mem-store]]
+            [konserve.filestore :refer [new-fs-store]]
+            [clj-time.core :as t]
             [konserve.protocols :refer [-get-in -assoc-in]]
             [geschichte.sync :refer [server-peer client-peer]]
             [geschichte.stage :as s]
@@ -10,6 +12,7 @@
             [geschichte.p2p.block-detector :refer [block-detector]]
             [geschichte.platform :refer [create-http-kit-handler! <!? start stop]]
             [monger.collection :as mc]
+            [monger.joda-time]
             [clojure.core.async :refer [>!!]]
             [aprint.core :refer [aprint]]
             [taoensso.timbre :as timbre]))
@@ -43,10 +46,12 @@
                    (= name fn-name))
                  (keys eval-map))))
 
-(defn init [ & {:keys [user socket repo-name]}]
+(defn init [ & {:keys [user socket repo-name fs-store]}]
   (let [user (or user "kordano@topiq.es")
         socket (or socket "ws://127.0.0.1:31744")
-        store (<!? (new-mem-store))
+        store (<!? (if fs-store
+                     (new-fs-store fs-store)
+                     (new-mem-store)))
         peer-server (server-peer (create-http-kit-handler! socket)
                                  store
                                  (comp (partial block-detector :peer-core)
@@ -74,7 +79,9 @@
     (<!? (s/transact stage [user repo "master"] [[(find-fn 'transact-entry) [status]]]))
     (let [pre-time (System/currentTimeMillis)]
       (<!? (s/commit! stage {user {repo #{"master"}}}))
-      (mc/insert db "ctimes" {:time (- (System/currentTimeMillis) pre-time)}))
+      (mc/insert db "ctimes" {:time (- (System/currentTimeMillis) pre-time)
+                              :type "commit"
+                              :ts (t/now)}))
    state))
 
 
@@ -100,7 +107,7 @@
 
   (def user "kordano@topiq.es")
 
-  (def repo #uuid "30b48786-9a2c-4f5a-ae82-079a990422b0")
+  (def repo #uuid "ac87a592-1d10-471e-87d3-2f3ad9518129")
 
 
   (<!? (s/subscribe-repos! stage {user {repo #{"master"}}}))
@@ -112,9 +119,5 @@
         count
         time))
 
-
-  (use 'clojure.stacktrace)
-
-  (-> (root-cause *e) (print-cause-trace 25))
 
   )

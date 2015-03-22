@@ -5,7 +5,9 @@
             [ceres-collector.geschichte :as geschichte]
             [ceres-collector.scheduler :as scheduler]
             [gezwitscher.core :refer [start-filter-stream gezwitscher]]
+            [konserve.protocols :refer [-get-in]]
             [clojure.java.io :as io]
+            [geschichte.platform :refer [<!? <?]]
             [clojure.core.async :refer [close! put! timeout sub chan <!! >!! <! >! go go-loop] :as async]
             [taoensso.timbre :refer [info debug error warn] :as timbre]))
 
@@ -21,7 +23,7 @@
    (-> path
        slurp
        read-string
-       (assoc :geschichte (geschichte/init :user "kordano@topiq.es" :repo "tweet collection"))
+       (assoc :geschichte (geschichte/init :user "kordano@topiq.es" :repo "tweet collection" :fs-store "/data/ceres/konserve")) ;; todo: into config file
        (assoc :log-db (mongo/init-log-db "saturn")))))
 
 
@@ -52,11 +54,11 @@
        (fn [status] (geschichte/transact-status server-state status))
        credentials)))
 
+  (<!? (-get-in (get-in @server-state [:geschichte :store]) ["kordano@topiq.es"]))
 
   (do
     (geschichte-stream)
     (geschichte/stop-peer server-state))
-
 
   (aprint.core/aprint (get-in @server-state [:geschichte :repo]))
 
@@ -64,7 +66,6 @@
       (get-in [:data])
       count
       time)
-
 
   (def stop-stream
     (let [{{:keys [follow track credentials]} :app} @server-state
@@ -78,7 +79,6 @@
          (debug "STATUS - " (str "@" (get-in status [:user :screen_name])) ":"  (:text status))
          (proc/process db status))
        credentials)))
-
 
   (stop-stream)
 
