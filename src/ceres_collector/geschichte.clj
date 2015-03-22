@@ -35,7 +35,7 @@
   (if (eval-map code)
     (eval-map code)
     (do (debug "eval-map didn't match:" code)
-        (throw code))))
+        (fn [old _] old))))
 
 (defn find-fn [name]
   (first (filter (fn [[_ fn-name]]
@@ -98,7 +98,7 @@
 
   (def user "kordano@topiq.es")
 
-  (def repo #uuid "8496c36e-6935-4074-9b5a-7c9fa4902ebd")
+  (def repo #uuid "30b48786-9a2c-4f5a-ae82-079a990422b0")
 
 
   (<!? (s/subscribe-repos! stage {user {repo #{"master"}}}))
@@ -106,9 +106,9 @@
   (let [causal-order (get-in @stage [user repo :state :causal-order])
         master-head (first (get-in @stage [user repo :state :branches "master"]))]
     (-> (<!? (commit-value store mapped-eval causal-order master-head))
-        deref
         (get-in [:data])
-        count))
+        count
+        time))
 
 
   (use 'clojure.stacktrace)
