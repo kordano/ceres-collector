@@ -14,13 +14,13 @@
   "Create a defjob for scheduling."
   [coll]
   `(defjob ~(symbol (str coll "Backup")) [ctx#]
-     (info "- BACKUP -" ~coll)
+     (info "SCHEDULER - creating backup: " ~coll)
      (let [path# (get (qc/from-job-data ctx#) "folder-path")]
        (mongo/backup-yesterday "juno" ~(clojure.string/lower-case coll) path#))))
 
 (defn backup-schedule
   "Create schedule for a given collection, storing path, collection offset and job type."
-  [coll path offset jtype]
+  [s coll path offset jtype]
   (let [job (j/build
                (j/of-type jtype)
                (j/using-job-data {"folder-path" path})
@@ -34,12 +34,13 @@
                       (every-day)
                       (starting-daily-at (time-of-day 3 (* 3 offset) 0))
                       (ending-daily-at (time-of-day 3 (* 3 offset) 1)))))]
-     (qs/schedule job trigger)))
+     (qs/schedule s job trigger)))
 
 
-(defn start
+(defn start-jobs
   "Run the schedules"
   [path]
+  (info "SCHEDULER - warming up ...")
   (let [jobs [["Tweets" (create-backup-job "Tweets")]
               ["Users" (create-backup-job "Users")]
               ["Htmls" (create-backup-job "Htmls")]
@@ -54,9 +55,9 @@
               ["Shares" (create-backup-job "Shares")]
               ["Urlrefs" (create-backup-job "Urlrefs")]
               ["Tagrefs" (create-backup-job "Tagrefs")]
-              ["Unknown" (create-backup-job "Unknown")]]]
-    jobs
-    (qs/initialize)
-    (qs/start)
+              ["Unknown" (create-backup-job "Unknown")]]
+        _ jobs
+       s (qs/start (qs/initialize))]
     (doall
-     (map #(backup-schedule (first (get jobs %)) path % (second (get jobs %))) (range (count jobs))))))
+     (map #(backup-schedule s (first (get jobs %)) path % (second (get jobs %))) (range (count jobs))))
+    (info "SCHEDULER - running!")))

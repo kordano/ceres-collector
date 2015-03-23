@@ -18,6 +18,7 @@
 (defn create-index
   "Define mongodb indices on first start"
   [db]
+  (info "MONGODB - Creating index!")
   (do
     (mc/ensure-index db "urls" (array-map :url 1))
     (mc/ensure-index db "urls" (array-map :ts 1))
@@ -104,20 +105,20 @@
 
 (defn init [& {:keys [name server-address] :as opts} ]
   "config must have keys server-address and name"
-  (info "MongoDB - creating connection ...")
+  (info "MONGODB - creating connection ...")
   (when-not opts
     (info "MongoDB - using default configuration"))
   (let [^MongoOptions opts (mg/mongo-options {:threads-allowed-to-block-for-connection-multiplier 300}) ;; TODO: better options handling
         ^ServerAddress sa  (mg/server-address (or server-address (System/getenv "DB_PORT_27017_TCP_ADDR") "127.0.0.1") 27017)
         name (or name "juno")
         db (mg/get-db (mg/connect sa opts) name)]
-    (info "MongoDB - connected to" name "!")
+    (info "MONGODB - connected to" name "!")
     (MongoDB. db name opts sa)))
 
 
 (defn init-log-db [name]
   (let [db (mg/get-db (mg/connect) name)]
-    (info "MongoDB - " name " connected!")
+    (info "MONGODB - " name " connected!")
     db))
 
 
