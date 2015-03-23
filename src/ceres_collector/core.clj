@@ -32,10 +32,11 @@
   (timbre/set-config! [:appenders :spit :enabled?] true)
   (timbre/set-config! [:shared-appender-config :spit-filename] (:logfile @server-state))
   (info "Starting twitter collector...")
-  (when (:init? @server-state)
-    (mongo/create-index))
+
   (let [{{:keys [follow track credentials]} :app} @server-state
         db (mongo/init :name "juno")]
+    (when (:init? @server-state)
+      (mongo/create-index (:db db)))
     (start-filter-stream follow track (fn [status] (proc/process db status)) credentials))
   (when (:backup? @server-state)
     (scheduler/start (:backup-folder @server-state))))
