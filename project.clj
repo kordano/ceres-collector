@@ -15,7 +15,6 @@
                  [net.polyc0l0r/konserve "0.2.3"]
                  [net.polyc0l0r/geschichte "0.1.0-SNAPSHOT"]
                  [com.novemberain/monger "2.1.0"]
-                 [com.datomic/datomic-free "0.9.5153"]
 
                  [clj-time "0.9.0"]
                  [cheshire "5.4.0"]
