@@ -10,11 +10,11 @@
   Database
   (transact [this entry]))
 
-(defn init-schema [conn path]
+#_(defn init-schema [conn path]
   (d/transact conn (-> path slurp read-string)))
 
 
-(defn init [& {:keys [uri schema]} :as opts]
+#_(defn init [& {:keys [uri schema] :as opts}]
   (info "DATOMIC - creating connection ...")
   (let [db-uri (or uri (str "datomic:mem://" (d/squuid)))
         _ (when-not uri
