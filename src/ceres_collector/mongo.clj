@@ -97,8 +97,8 @@
   Database
   (transact [this entry] (store (:db this) entry))
   (transact-and-return-id [this entry] (-> (transact this entry)
-                                       (from-db-object true)
-                                       :_id))
+                                           (from-db-object true)
+                                           :_id))
   (retrieve-id [this query] (find-id (:db this) query)))
 
 
@@ -107,11 +107,11 @@
   (info "MongoDB - creating connection ...")
   (when-not opts
     (info "MongoDB - using default configuration"))
-  (let [^MongoOptions opts (mg/mongo-options :threads-allowed-to-block-for-connection-multiplier 300) ;; TODO: better options handling
+  (let [^MongoOptions opts (mg/mongo-options {:threads-allowed-to-block-for-connection-multiplier 300}) ;; TODO: better options handling
         ^ServerAddress sa  (mg/server-address (or server-address (System/getenv "DB_PORT_27017_TCP_ADDR") "127.0.0.1") 27017)
         name (or name "juno")
         db (mg/get-db (mg/connect sa opts) name)]
-    (info "MongoDB - connected! ")
+    (info "MongoDB - connected to" name "!")
     (MongoDB. db name opts sa)))
 
 
@@ -151,7 +151,7 @@
 
 (comment
 
-  (def db (init :name "juno"))
+  (def db (:db (init :name "juno")))
 
   (def log-db (init-log-db "saturn"))
 

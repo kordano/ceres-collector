@@ -23,8 +23,8 @@
    (-> path
        slurp
        read-string
-       (assoc :geschichte (geschichte/init :user "kordano@topiq.es" :repo "tweet collection" :fs-store "/data/ceres/konserve")) ;; todo: into config file
-       (assoc :log-db (mongo/init-log-db "saturn")))))
+       #_(assoc :geschichte (geschichte/init :user "kordano@topiq.es" :repo "tweet collection" :fs-store "/data/ceres/konserve")) ;; todo: into config file
+       #_(assoc :log-db (mongo/init-log-db "saturn")))))
 
 
 (defn -main [config-path & args]
