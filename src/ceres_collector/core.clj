@@ -7,7 +7,7 @@
             [gezwitscher.core :refer [start-filter-stream gezwitscher]]
             [konserve.protocols :refer [-get-in]]
             [clojure.java.io :as io]
-            [geschichte.platform :refer [<!? <?]]
+            #_[geschichte.platform :refer [<!? <?]]
             [clojure.core.async :refer [close! put! timeout sub chan <!! >!! <! >! go go-loop] :as async]
             [taoensso.timbre :refer [info debug error warn] :as timbre]))
 
@@ -43,29 +43,6 @@
 
 
 (comment
-
-  (initialize server-state "opt/test-config.edn")
-
-  (def geschichte-stream
-    (let [{{:keys [follow track credentials]} :app} @server-state]
-      (start-filter-stream
-       follow
-       track
-       (fn [status] (geschichte/transact-status server-state status))
-       credentials)))
-
-  (<!? (-get-in (get-in @server-state [:geschichte :store]) ["kordano@topiq.es"]))
-
-  (do
-    (geschichte-stream)
-    (geschichte/stop-peer server-state))
-
-  (aprint.core/aprint (get-in @server-state [:geschichte :repo]))
-
-  (-> (geschichte/get-current-state server-state)
-      (get-in [:data])
-      count
-      time)
 
   (def stop-stream
     (let [{{:keys [follow track credentials]} :app} @server-state
