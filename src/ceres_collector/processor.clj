@@ -107,9 +107,9 @@
     (doall (map #(poly/transact db (DbEntry. :urlref {:source mid :target %})) url-ids))
     (doall (map #(poly/transact db (DbEntry. :tagref {:source mid :target %})) hids))
     (case type
-      :reply (let [sid  (poly/retrieve-id db (DbQuery. :message {:tweet (:in_reply_to_status_id tweet)}))]
+      :reply (let [sid  (poly/retrieve-id db (DbQuery. :message {:tid (:in_reply_to_status_id tweet)}))]
                (poly/transact db (DbEntry. :reply {:source mid :target sid})))
-      :retweet (let [sid (poly/retrieve-id db (DbQuery. :message {:tweet (get-in tweet [:retweeted_status :id])}))]
+      :retweet (let [sid (poly/retrieve-id db (DbQuery. :message {:tid (get-in tweet [:retweeted_status :id])}))]
                  (poly/transact db (DbEntry. :retweet {:source mid :target sid})))
       :share (if news?
                nil
