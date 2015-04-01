@@ -87,7 +87,6 @@
 
 
 (defn store [db db-entry]
-  (info (:type db-entry) " -> " (:value db-entry))
   (mc/insert-and-return db (type->coll (:type db-entry)) (assoc (:value db-entry) :ts (t/now))))
 
 
