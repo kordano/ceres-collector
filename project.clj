@@ -12,8 +12,6 @@
                  [org.clojure/core.async "0.1.303.0-886421-alpha"]
                  [gezwitscher "0.1.1-SNAPSHOT"]
 
-                 [net.polyc0l0r/konserve "0.2.3"]
-                 [net.polyc0l0r/geschichte "0.1.0-SNAPSHOT"]
                  [com.novemberain/monger "2.1.0"]
 
                  [clj-time "0.9.0"]
