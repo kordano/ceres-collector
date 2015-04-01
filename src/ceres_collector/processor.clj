@@ -113,6 +113,6 @@
                  (poly/transact db (DbEntry. :retweet {:source mid :target sid})))
       :share (if news?
                nil
-               (let [sids (doall (map #(:target (poly/retrieve-id db (DbQuery. :source {:source %}))) url-ids))]
+               (let [sids (doall (map #(:target (first (poly/retrieve-entry db (DbQuery. :source {:source %})))) url-ids))]
                  (doall (map #(poly/transact db (DbEntry. :share {:source mid :target %})) sids))))
       :unrelated (poly/transact db (DbEntry. :unknown {:source mid})))))

@@ -4,7 +4,8 @@
   (init [this])
   (transact [this entry])
   (transact-and-return-id [this entry])
-  (retrieve-id [this query]))
+  (retrieve-id [this query])
+  (retrieve-entry [this query]))
 
 (defrecord DbEntry [type value])
 

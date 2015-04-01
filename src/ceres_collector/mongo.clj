@@ -87,12 +87,15 @@
 
 
 (defn store [db db-entry]
+  (info (:type db-entry) " -> " (:value db-entry))
   (mc/insert-and-return db (type->coll (:type db-entry)) (assoc (:value db-entry) :ts (t/now))))
 
 
 (defn find-id [db query]
   (:_id (mc/find-one-as-map db (type->coll (:type query)) (:query query))))
 
+(defn find-entry [db query]
+  (mc/find-maps db (type->coll (:type query)) (:query query)))
 
 (defrecord MongoDB [db name opts sa]
   Database
@@ -100,6 +103,7 @@
   (transact-and-return-id [this entry] (-> (transact this entry)
                                            (from-db-object true)
                                            :_id))
+  (retrieve-entry [this query] (find-entry (:db this) query))
   (retrieve-id [this query] (find-id (:db this) query)))
 
 
@@ -156,10 +160,10 @@
 
   (def log-db (init-log-db "saturn"))
 
-  (mc/count log-db "ctimes")
 
   (let [ctimes (->> (mc/find-maps log-db "ctimes")
               (map :time))]
     (reduce (comp float +) (map #(/ % (count ctimes)) ctimes)))
+
 
   )
