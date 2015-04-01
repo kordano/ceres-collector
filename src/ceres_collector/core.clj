@@ -4,7 +4,6 @@
             [ceres-collector.mongo :as mongo]
             [ceres-collector.scheduler :as scheduler]
             [gezwitscher.core :refer [start-filter-stream gezwitscher]]
-            [konserve.protocols :refer [-get-in]]
             [clojure.java.io :as io]
             [taoensso.timbre :refer [info debug error warn] :as timbre]))
 
@@ -27,8 +26,7 @@
     (let [{{:keys [follow track credentials]} :app} @state
           db (mongo/init :name "juno")]
       (do
-        (when (:init? @state)
-          (mongo/create-index (:db db)))
+        (when (:init? @state) (mongo/create-index (:db db)))
         (start-filter-stream follow track (fn [status] (proc/process db status)) credentials)))
     (when (:backup? @state)
       (scheduler/start-jobs (:backup-folder @state)))
