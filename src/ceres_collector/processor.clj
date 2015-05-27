@@ -9,7 +9,7 @@
 
 (timbre/refer-timbre)
 
-(def news-accounts #{"FAZ_NET" "dpa" "tagesschau" "SPIEGELONLINE" "SZ" "BILD" "DerWesten" "ntvde" "tazgezwitscher" "welt" "ZDFheute" "N24_de" "sternde" "focusonline"} )
+(def news-accounts #{"FAZ_NET" "dpa" "tagesschau" "SPIEGELONLINE" "SZ" "BILD" "DerWesten" "ntvde" "tazgezwitscher" "welt" "ZDFheute" "N24" "sternde" "focusonline"} )
 
 (def custom-formatter (f/formatter "E MMM dd HH:mm:ss Z YYYY"))
 
