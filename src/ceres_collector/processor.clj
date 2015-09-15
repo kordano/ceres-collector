@@ -11,6 +11,7 @@
 
 (def news-accounts #{"FAZ_NET" "dpa" "tagesschau" "SPIEGELONLINE" "SZ" "BILD" "DerWesten" "ntvde" "tazgezwitscher" "welt" "ZDFheute" "N24" "sternde" "focusonline"} )
 
+(def news-ids #{114508061 18016521 5734902 40227292 2834511 9204502 15071293 19232587 15243812 8720562 1101354170 15738602 18774524 5494392})
 (def custom-formatter (f/formatter "E MMM dd HH:mm:ss Z YYYY"))
 
 (defn expand-url
@@ -93,7 +94,7 @@
 (defn process [db status]
   (let [{:keys [id user entities text] :as tweet} (update-in status [:created_at] (fn [x] (f/parse custom-formatter x)))
         _id (poly/transact-and-return-id db (DbEntry. :tweet tweet))
-        news? (news-accounts (:screen_name user))
+        news? (news-ids (:id user))
         mid (poly/transact-and-return-id db (DbEntry. :message {:text text :tweet _id :tid id}))
         aid (get-author-id db user)
         _ (poly/transact db (DbEntry. :pub {:source aid :target mid}))

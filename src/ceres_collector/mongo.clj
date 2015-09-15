@@ -18,7 +18,7 @@
 (defn create-index
   "Define mongodb indices on first start"
   [db]
-  (info "MONGODB - Creating index!")
+  (info "MONGODB - Creating index ...")
   (do
     (mc/ensure-index db "urls" (array-map :url 1))
     (mc/ensure-index db "urls" (array-map :ts 1))
@@ -63,7 +63,8 @@
     (mc/ensure-index db "tweets" (array-map :id 1))
     (mc/ensure-index db "tweets" (array-map :retweeted_status.id 1))
     (mc/ensure-index db "tweets" (array-map :in_reply_to_status_id 1))
-    (mc/ensure-index db "tweets" (array-map :created_at 1))))
+    (mc/ensure-index db "tweets" (array-map :created_at 1)))
+  (info "MONGODB - Indexing done!"))
 
 
 (defn type->coll [type]
@@ -159,10 +160,10 @@
 
   (def log-db (init-log-db "saturn"))
 
+  (create-index db)
 
   (let [ctimes (->> (mc/find-maps log-db "ctimes")
               (map :time))]
     (reduce (comp float +) (map #(/ % (count ctimes)) ctimes)))
-
 
   )
